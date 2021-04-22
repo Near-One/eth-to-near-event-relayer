@@ -1,0 +1,17 @@
+{
+  "name": "connectors-relayer",
+  "version": "0.0.1",
+  "description": "The relayer for rainbow-token-connector and eth-connector",
+  "main": "index.js",
+  "author": "dev@near.org",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "eth-connector": "https://github.com/aurora-is-near/eth-connector",
+    "ethers": "^5.1.0",
+    "eth-object": "https://github.com/near/eth-object",
+    "eth-util-lite": "near/eth-util-lite#master",
+    "near-api-js": "^0.26.0",
+    "rainbow-token-connector": "https://github.com/aurora-is-near/rainbow-token-connector"
+  }
+}

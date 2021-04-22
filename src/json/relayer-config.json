@@ -1,0 +1,10 @@
+{
+  "relayerNearAccount": "testlocal.testnet",
+  "ethOnNearClientAccount": "client.ropsten.testnet",
+
+  "erc20LockerAddress": "0xb48e6441524f261e141bc766a7ebd54b19ca7465",
+  "rainbowTokenFactoryAccount": "f.ropsten.testnet",
+
+  "ethCustodianAddress": "0x4dE5E423CA193dF67081A1BAb17d253B55d63688",
+  "ethConnectorAccount": "v02.kconnector.testnet"
+}
