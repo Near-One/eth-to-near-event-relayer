@@ -6,12 +6,17 @@
   "author": "dev@near.org",
   "license": "MIT",
   "dependencies": {
+    "bn": "^1.0.5",
     "dotenv": "^8.2.0",
     "eth-connector": "https://github.com/aurora-is-near/eth-connector",
     "ethers": "^5.1.0",
     "eth-object": "https://github.com/near/eth-object",
     "eth-util-lite": "near/eth-util-lite#master",
+    "ethereumjs-block": "^2.2.2",
+    "merkle-patricia-tree": "^2.3.2",
     "near-api-js": "^0.26.0",
+    "promisfy": "^1.2.0",
+    "rainbow-bridge-utils": "1.0.0",
     "rainbow-token-connector": "https://github.com/aurora-is-near/rainbow-token-connector"
   }
 }

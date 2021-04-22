@@ -1,4 +1,7 @@
 {
+  "nearJsonRpc": "https://rpc.testnet.near.org/",
+  "nearNetwork": "default",
+
   "relayerNearAccount": "testlocal.testnet",
   "ethOnNearClientAccount": "client.ropsten.testnet",
 

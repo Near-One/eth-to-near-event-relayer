@@ -29,18 +29,20 @@ const proofBorshSchema = new Map([
   }]
 ]);
 
-async function findProofForEvent (provider, isEthCustodian, eventLog) {
-    const signerAccount = new ethers.Wallet(process.env.ROPSTEN_PRIVATE_KEY, provider);
+async function findProofForEvent (ethersProvider, isEthCustodian, eventLog) {
+    const signerAccount = new ethers.Wallet(process.env.ROPSTEN_PRIVATE_KEY, ethersProvider);
 
+    //console.log(`Find proof for eventLog: ${JSON.stringify(eventLog)}`);
     const receipt = await eventLog.getTransactionReceipt();
     receipt.cumulativeGasUsed = receipt.cumulativeGasUsed.toNumber();
 
     console.log(`Generating the proof for TX with hash: ${receipt.transactionHash}`);
 
-    const block = await provider.getBlock(receipt.blockNumber);
-    const tree = await buildTree(block);
+    const block = await ethersProvider.getBlock(receipt.blockNumber);
+    const tree = await buildTree(ethersProvider, block);
 
     const proof = await extractProof(
+        ethersProvider,
         block,
         tree,
         receipt.transactionIndex
@@ -52,7 +54,7 @@ async function findProofForEvent (provider, isEthCustodian, eventLog) {
 
     const formattedProof = new BorshProof({
         log_index: logIndexInArray,
-        log_entry_data: Array.from(Log.fromObject(log).serialize()),
+        log_entry_data: Array.from(Log.fromObject(eventLog).serialize()),
         receipt_index: proof.txIndex,
         receipt_data: Array.from(Receipt.fromObject(receipt).serialize()),
         header_data: Array.from(proof.header_rlp),
@@ -72,7 +74,7 @@ async function findProofForEvent (provider, isEthCustodian, eventLog) {
 
     const filenamePrefix = 'proofdata_' + isEthCustodian ? 'ethCustodian' : 'erc20Locker';
     const path = 'build/proofs';
-    const file = Path.join(path, `${filenamePrefix}_${args.receipt_index}_${args.log_index}_${depositTxHash}.json`)
+    const file = Path.join(path, `${filenamePrefix}_${args.receipt_index}_${args.log_index}_${receipt.transactionHash}.json`)
     await fs.writeFile(file, JSON.stringify(args))
     console.log(`Proof has been successfully generated and saved at ${file}`);
 
@@ -80,10 +82,10 @@ async function findProofForEvent (provider, isEthCustodian, eventLog) {
     return args;
 }
 
-async function buildTree (block) {
+async function buildTree (ethersProvider, block) {
     const blockReceipts = await Promise.all(
         block.transactions.map(t =>
-                               ethers.provider.getTransactionReceipt(t))
+                               ethersProvider.getTransactionReceipt(t))
     );
 
     // Build a Patricia Merkle Trie
@@ -100,13 +102,14 @@ async function buildTree (block) {
     return tree;
 }
 
-async function extractProof (block, tree, transactionIndex) {
+async function extractProof (ethersProvider, block, tree, transactionIndex) {
+    const encodedTransactionIndex = encode(transactionIndex);
     const [, , stack] = await promisfy(
         tree.findPath,
         tree
-    )(encode(transactionIndex));
+    )(encodedTransactionIndex);
 
-    const blockData = await ethers.provider.send(
+    const blockData = await ethersProvider.send(
         'eth_getBlockByNumber',
         [ethers.BigNumber.from(block.number)._hex, true]);
 
