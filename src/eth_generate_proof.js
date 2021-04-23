@@ -29,7 +29,7 @@ const proofBorshSchema = new Map([
   }]
 ]);
 
-async function findProofForEvent (ethersProvider, isEthCustodian, eventLog) {
+async function findProofForEvent (ethersProvider, isEthConnector, eventLog) {
     const signerAccount = new ethers.Wallet(process.env.ROPSTEN_PRIVATE_KEY, ethersProvider);
 
     //console.log(`Find proof for eventLog: ${JSON.stringify(eventLog)}`);
@@ -72,13 +72,17 @@ async function findProofForEvent (ethersProvider, isEthCustodian, eventLog) {
         skip_bridge_call: skipBridgeCall
     }
 
-    const filenamePrefix = 'proofdata_' + isEthCustodian ? 'ethCustodian' : 'erc20Locker';
+    const filenamePrefix = 'proofdata_' + isEthConnector ? 'ethCustodian' : 'erc20Locker';
     const path = 'build/proofs';
     const file = Path.join(path, `${filenamePrefix}_${args.receipt_index}_${args.log_index}_${receipt.transactionHash}.json`)
     await fs.writeFile(file, JSON.stringify(args))
     console.log(`Proof has been successfully generated and saved at ${file}`);
 
-    //return serializeBorsh(proofBorshSchema, formattedProof);
+    // Bridge-token-factory accepts proof as Borsh serialized
+    if (! isEthConnector) {
+        return serializeBorsh(proofBorshSchema, formattedProof);
+    }
+
     return args;
 }
 

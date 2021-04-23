@@ -1,6 +1,5 @@
 const BN = require('bn.js')
 const nearAPI = require('near-api-js');
-const { serializeBorsh } = require('near-api-js/lib/utils/serialize');
 
 const relayerConfig = require('./json/relayer-config.json');
 
