@@ -80,7 +80,7 @@ async function startRelayerFromBlockNumber(ethersProvider, nearJsonRpc, nearNetw
                 }
             }
 
-            const relayERC20 = false;
+            const relayERC20 = true;
             if (relayERC20) {
                 const erc20LockerDepositedEvents = await getDepositedEventsForBlocks(
                     ethersProvider,
@@ -90,7 +90,7 @@ async function startRelayerFromBlockNumber(ethersProvider, nearJsonRpc, nearNetw
                     blockTo
                 );
 
-                if (ethCustodianDepositedEvents.length > 0) {
+                if (erc20LockerDepositedEvents.length > 0) {
                     console.log('Relaying ERC20Locker events.');
                     console.log(`Found ${erc20LockerDepositedEvents.length} ERC20Locker locked events in blocks [${blockFrom}; ${blockTo}]`);
 

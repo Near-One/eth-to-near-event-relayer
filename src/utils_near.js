@@ -18,7 +18,12 @@ async function depositProofToNear(nearAccount, isEthConnector, isNoStd, proof) {
 
     console.log(`Submitting deposit transaction from: ${nearAccount.accountId} account to ${connectorContractAddress}`);
     try {
-        await connector.deposit({'proof': proof});//, 'gas': gas_limit, 'storage': payment_for_storage});
+        if (isEthConnector) {
+            await connector.deposit({'proof': proof});//, 'gas': gas_limit, 'storage': payment_for_storage});
+        } else {
+            await connector.deposit(proof, gas_limit, payment_for_storage);
+        }
+
         console.log(`Submitted.`);
     } catch (error) {
         console.log(error);
