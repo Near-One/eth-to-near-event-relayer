@@ -36,7 +36,7 @@ async function findProofForEvent (ethersProvider, isEthCustodian, eventLog) {
     const receipt = await eventLog.getTransactionReceipt();
     receipt.cumulativeGasUsed = receipt.cumulativeGasUsed.toNumber();
 
-    console.log(`Generating the proof for TX with hash: ${receipt.transactionHash}`);
+    console.log(`Generating the proof for TX with hash: ${receipt.transactionHash} at height ${receipt.blockNumber}`);
 
     const block = await ethersProvider.getBlock(receipt.blockNumber);
     const tree = await buildTree(ethersProvider, block);
