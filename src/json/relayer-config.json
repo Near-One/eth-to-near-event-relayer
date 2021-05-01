@@ -8,6 +8,6 @@
   "erc20LockerAddress": "0xb48e6441524f261e141bc766a7ebd54b19ca7465",
   "rainbowTokenFactoryAccount": "f.ropsten.testnet",
 
-  "ethCustodianAddress": "0x4dE5E423CA193dF67081A1BAb17d253B55d63688",
-  "ethConnectorAccount": "v02.kconnector.testnet"
+  "ethCustodianAddress": "0x4D8C60b494f02D76CC9D41F835029eC7Ff1A4881",
+  "ethConnectorAccount": "a01.kconnector.testnet"
 }

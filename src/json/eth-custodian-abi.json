@@ -35,40 +35,9 @@
                 "type": "address"
             },
             {
-                "indexed": true,
-                "internalType": "address",
-                "name": "ethRecipientOnNear",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "fee",
-                "type": "uint256"
-            }
-        ],
-        "name": "DepositedToEVM",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "sender",
-                "type": "address"
-            },
-            {
                 "indexed": false,
                 "internalType": "string",
-                "name": "nearRecipient",
+                "name": "recipient",
                 "type": "string"
             },
             {
@@ -84,7 +53,7 @@
                 "type": "uint256"
             }
         ],
-        "name": "DepositedToNear",
+        "name": "Deposited",
         "type": "event"
     },
     {
@@ -164,9 +133,9 @@
     {
         "inputs": [
             {
-                "internalType": "address",
+                "internalType": "string",
                 "name": "ethRecipientOnNear",
-                "type": "address"
+                "type": "string"
             },
             {
                 "internalType": "uint256",

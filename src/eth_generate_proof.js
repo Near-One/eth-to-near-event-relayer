@@ -61,7 +61,6 @@ async function findProofForEvent (ethersProvider, isEthConnector, eventLog) {
         proof: Array.from(proof.receiptProof).map(utils.rlp.encode).map(b => Array.from(b))
     });
 
-    const skipBridgeCall = false;
     const args = {
         log_index: logIndexInArray,
         log_entry_data: formattedProof.log_entry_data,
@@ -69,21 +68,21 @@ async function findProofForEvent (ethersProvider, isEthConnector, eventLog) {
         receipt_data: formattedProof.receipt_data,
         header_data: formattedProof.header_data,
         proof: formattedProof.proof,
-        skip_bridge_call: skipBridgeCall
     }
 
-    const filenamePrefix = 'proofdata_' + isEthConnector ? 'ethCustodian' : 'erc20Locker';
+    const filenamePrefix = 'proofdata_' + isEthConnector === true ? 'ethCustodian' : 'erc20Locker';
     const path = 'build/proofs';
     const file = Path.join(path, `${filenamePrefix}_${args.receipt_index}_${args.log_index}_${receipt.transactionHash}.json`)
     await fs.writeFile(file, JSON.stringify(args))
     console.log(`Proof has been successfully generated and saved at ${file}`);
 
-    // Bridge-token-factory accepts proof as Borsh serialized
-    if (! isEthConnector) {
-        return serializeBorsh(proofBorshSchema, formattedProof);
-    }
+    const serializedProof = serializeBorsh(proofBorshSchema, formattedProof);
 
-    return args;
+    const borshFile = Path.join(path, `${filenamePrefix}_${args.receipt_index}_${args.log_index}_${receipt.transactionHash}.borsh`)
+    await fs.writeFile(borshFile, serializedProof);
+    console.log(`Borsh-serialized proof has been successfully generated and saved at ${borshFile}`);
+
+    return serializedProof;
 }
 
 async function buildTree (ethersProvider, block) {

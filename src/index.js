@@ -13,7 +13,7 @@ const { depositProofToNear } = require('./utils_near');
 
 const { EthOnNearClientContract } = require('./eth-on-near-client.js');
 
-const CLIENT_NUM_CONFIRMATIONS = 3;
+const CLIENT_NUM_CONFIRMATIONS = 5;
 const SLEEP_DELAY = 30_000; // 30 secs
 
 function sleep(time_ms) {
@@ -75,7 +75,7 @@ async function startRelayerFromBlockNumber(ethersProvider, nearJsonRpc, nearNetw
 
                     for (const eventLog of ethCustodianDepositedEvents) {
                         const proof = await findProofForEvent(ethersProvider, true, eventLog);
-                        await depositProofToNear(relayerNearAccount, true, false, proof);
+                        await depositProofToNear(relayerNearAccount, true, proof);
                     }
                 }
             }
@@ -95,8 +95,8 @@ async function startRelayerFromBlockNumber(ethersProvider, nearJsonRpc, nearNetw
                     console.log(`Found ${erc20LockerDepositedEvents.length} ERC20Locker locked events in blocks [${blockFrom}; ${blockTo}]`);
 
                     for (const eventLog of erc20LockerDepositedEvents) {
-                        const proof = await findProofForEvent(ethersProvider,false, eventLog);
-                        await depositProofToNear(relayerNearAccount, false, false, proof);
+                        const proof = await findProofForEvent(ethersProvider, false, eventLog);
+                        await depositProofToNear(relayerNearAccount, false, proof);
                     }
                 }
             }
