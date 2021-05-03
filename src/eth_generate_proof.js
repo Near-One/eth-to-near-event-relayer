@@ -70,7 +70,7 @@ async function findProofForEvent (ethersProvider, isEthConnector, eventLog) {
         proof: formattedProof.proof,
     }
 
-    const filenamePrefix = 'proofdata_' + isEthConnector === true ? 'ethCustodian' : 'erc20Locker';
+    const filenamePrefix = 'proofdata_' + (isEthConnector === true ? 'ethCustodian' : 'erc20Locker');
     const path = 'build/proofs';
     const file = Path.join(path, `${filenamePrefix}_${args.receipt_index}_${args.log_index}_${receipt.transactionHash}.json`)
     await fs.writeFile(file, JSON.stringify(args))

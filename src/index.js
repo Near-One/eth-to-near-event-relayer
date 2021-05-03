@@ -126,7 +126,7 @@ async function main() {
     }
     const blockNumberFrom = process.argv[2];
 
-    const url = process.env.ETH_PROVIDER_URL;
+    const url = process.env.WEB3_RPC_ENDPOINT;
     const ethersProvider = new ethers.providers.JsonRpcProvider(url);
 
     await startRelayerFromBlockNumber(
