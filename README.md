@@ -5,8 +5,21 @@ for each and submit it to NEAR.
 
 ## Configuration
 
-Install packages:<br/>
+1. Install packages:<br/>
 `$ yarn install`
+
+2. Set the appropriate `relayerNearAccount` address in `src/json/relayer-config.json` file.
+
+3. Add to the file your RPC endpoint (with or without API key):
+`$ echo "WEB3_RPC_ENDPOINT=YOUR_WEB3_RPC_ENDPOINT_HERE" >> .env` <br/>
+RPC access can be easily gained from [Alchemy](https://www.alchemyapi.io/).
+
+4. Add to the file Ropsten Private key:
+`$ echo "ROPSTEN_PRIVATE_KEY=YOUR_ROPSTEN_PRIVATE_KEY_HERE" >> .env`
+
+5. Add path to the Near credentials (e.g. this usually will be at `~/.near-credentials` on Linux <br/>
+and `/Users/<user>/.near-credentials` on MacOS: <br/>
+`$ echo "NEAR_KEY_STORE_PATH=PATH_TO_YOUR_NEAR_CREDENTIALS_HERE" >> .env`
 
 ## Running
 
