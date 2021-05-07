@@ -19,4 +19,17 @@ async function getDepositedEventsForBlocks(provider, contractAddress, isEthCusto
     return depositedEvents;
 }
 
-exports.getDepositedEventsForBlocks = getDepositedEventsForBlocks
+function isEventForAurora(nearAuroraAccount, eventLog) {
+    const recipientMessage = eventLog.args[1];
+    const recipientArgs = recipientMessage.split(':');
+
+    if (recipientArgs.length < 2) {
+        return false;
+    }
+
+    const receiverContract = recipientArgs[0];
+    return receiverContract === nearAuroraAccount;
+}
+
+exports.getDepositedEventsForBlocks = getDepositedEventsForBlocks;
+exports.isEventForAurora = isEventForAurora;

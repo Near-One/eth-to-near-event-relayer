@@ -4,7 +4,7 @@ const nearAPI = require('near-api-js');
 const relayerConfig = require('./json/relayer-config.json');
 
 async function depositProofToNear(nearAccount, isEthConnector, proof) {
-    const connectorContractAddress = isEthConnector ? relayerConfig.ethConnectorAccount : relayerConfig.rainbowTokenFactoryAccount;
+    const connectorContractAddress = isEthConnector ? relayerConfig.auroraAccount : relayerConfig.rainbowTokenFactoryAccount;
     const connector = new nearAPI.Contract(
         nearAccount,
         connectorContractAddress,

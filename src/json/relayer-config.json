@@ -9,5 +9,12 @@
   "rainbowTokenFactoryAccount": "f.ropsten.testnet",
 
   "ethCustodianAddress": "0x4D8C60b494f02D76CC9D41F835029eC7Ff1A4881",
-  "ethConnectorAccount": "a01.kconnector.testnet"
+  "auroraAccount": "a01.kconnector.testnet",
+
+  "numRequiredClientConfirmations": 5,
+  "pollingIntervalMs": 30000,
+
+  "relayEthConnectorEvents": true,
+  "relayERC20Events": true,
+  "relayOnlyAuroraEvents": true
 }
