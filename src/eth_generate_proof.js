@@ -32,7 +32,6 @@ const proofBorshSchema = new Map([
 async function findProofForEvent (ethersProvider, isEthConnector, eventLog) {
     const signerAccount = new ethers.Wallet(process.env.ROPSTEN_PRIVATE_KEY, ethersProvider);
 
-    //console.log(`Find proof for eventLog: ${JSON.stringify(eventLog)}`);
     const receipt = await eventLog.getTransactionReceipt();
     receipt.cumulativeGasUsed = receipt.cumulativeGasUsed.toNumber();
 
