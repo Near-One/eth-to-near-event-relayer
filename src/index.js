@@ -40,6 +40,8 @@ async function startRelayerFromBlockNumber(ethersProvider, nearJsonRpc, nearNetw
     const accountBalance = await relayerNearAccount.getAccountBalance();
     const availableAccountBalance = nearAPI.utils.format.formatNearAmount(accountBalance.available);
     console.log(`Account balance of ${relayerNearAccount.accountId}: ${availableAccountBalance} NEAR`);
+    console.log(`Num required EthOnNear client confirmations: ${relayerConfig.numRequiredClientConfirmations} ms`);
+    console.log(`Event polling interval: ${relayerConfig.pollingIntervalMs} ms`);
 
     let currentBlockNumber = blockNumber > 0 ? blockNumber - 1 : 0;
 
@@ -73,10 +75,12 @@ async function startRelayerFromBlockNumber(ethersProvider, nearJsonRpc, nearNetw
                         if (relayerConfig.relayOnlyAuroraEvents) {
                             const isAuroraEvent = isEventForAurora(relayerConfig.auroraAccount, eventLog);
                             if (isAuroraEvent) {
+                                console.log('Processing ETH->AuroraETH deposit event...');
                                 const proof = await findProofForEvent(ethersProvider, true, eventLog);
                                 await depositProofToNear(relayerNearAccount, true, proof);
                             }
                         } else {
+                            console.log('Processing ETH->NEP-141 deposit event...');
                             const proof = await findProofForEvent(ethersProvider, true, eventLog);
                             await depositProofToNear(relayerNearAccount, true, proof);
                         }
@@ -101,10 +105,12 @@ async function startRelayerFromBlockNumber(ethersProvider, nearJsonRpc, nearNetw
                         if (relayerConfig.relayOnlyAuroraEvents) {
                             const isAuroraEvent = isEventForAurora(relayerConfig.auroraAccount, eventLog);
                             if (isAuroraEvent) {
+                                console.log('Processing ERC20->AuroraERC20 deposit event...');
                                 const proof = await findProofForEvent(ethersProvider, false, eventLog);
                                 await depositProofToNear(relayerNearAccount, false, proof);
                             }
                         } else {
+                            console.log('Processing ERC20->NEP-141 deposit event...');
                             const proof = await findProofForEvent(ethersProvider, false, eventLog);
                             await depositProofToNear(relayerNearAccount, false, proof);
                         }
