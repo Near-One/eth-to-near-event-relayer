@@ -11,6 +11,8 @@ const { findProofForEvent } = require('./eth_generate_proof');
 const { getDepositedEventsForBlocks, isEventForAurora } = require('./utils_eth');
 const { depositProofToNear } = require('./utils_near');
 
+const { HttpPrometheus } = require('../utils/http-prometheus');
+
 const { EthOnNearClientContract } = require('./eth-on-near-client.js');
 
 function sleep(time_ms) {
@@ -40,14 +42,23 @@ async function startRelayerFromBlockNumber(ethersProvider, nearJsonRpc, nearNetw
     const accountBalance = await relayerNearAccount.getAccountBalance();
     const availableAccountBalance = nearAPI.utils.format.formatNearAmount(accountBalance.available);
     console.log(`Account balance of ${relayerNearAccount.accountId}: ${availableAccountBalance} NEAR`);
-    console.log(`Num required EthOnNear client confirmations: ${relayerConfig.numRequiredClientConfirmations} ms`);
+    console.log(`Num required EthOnNear client confirmations: ${relayerConfig.numRequiredClientConfirmations} s`);
     console.log(`Event polling interval: ${relayerConfig.pollingIntervalMs} ms`);
+
+    const httpPrometheus = new HttpPrometheus(58000, 'eth_to_near_event_relayer_');
+    const ethOnNearLastBlockNumberGauge = httpPrometheus.gauge('eth_on_near_client_block_number', 'Current EthOnNear client block number');
+    const relayerCurrentBlockNumberGauge = httpPrometheus.gauge('event_relayer_current_block_number', 'Current EthToNearEventRelayer block number');
+    const relayedEthConnectorEventsCounter = httpPrometheus.counter('num_relayed_eth_connector_events', 'Number of relayed ETH connector events');
+    const relayedERC20ConnectorEventsCounter = httpPrometheus.counter('num_relayed_erc20_connector_events', 'Number of relayed ERC20 connector events');
 
     let currentBlockNumber = blockNumber > 0 ? blockNumber - 1 : 0;
 
     while (true) {
         const ethOnNearLastBlockNumber = await getEthOnNearLastBlockNumber(relayerNearAccount, relayerConfig.ethOnNearClientAccount);
         const clientLastSafeBlockNumber = ethOnNearLastBlockNumber - relayerConfig.numRequiredClientConfirmations;
+
+        ethOnNearLastBlockNumberGauge.set(ethOnNearLastBlockNumber);
+        relayerCurrentBlockNumberGauge.set(currentBlockNumber);
 
         //console.log(`Current block number: ${currentBlockNumber}`);
         //console.log(`EthOnNear last block number: ${ethOnNearLastBlockNumber}`);
@@ -78,11 +89,13 @@ async function startRelayerFromBlockNumber(ethersProvider, nearJsonRpc, nearNetw
                                 console.log('Processing ETH->AuroraETH deposit event...');
                                 const proof = await findProofForEvent(ethersProvider, true, eventLog);
                                 await depositProofToNear(relayerNearAccount, true, proof);
+                                relayedEthConnectorEventsCounter.inc(1);
                             }
                         } else {
                             console.log('Processing ETH->NEP-141 deposit event...');
                             const proof = await findProofForEvent(ethersProvider, true, eventLog);
                             await depositProofToNear(relayerNearAccount, true, proof);
+                            relayedEthConnectorEventsCounter.inc(1);
                         }
                     }
                 }
@@ -108,11 +121,13 @@ async function startRelayerFromBlockNumber(ethersProvider, nearJsonRpc, nearNetw
                                 console.log('Processing ERC20->AuroraERC20 deposit event...');
                                 const proof = await findProofForEvent(ethersProvider, false, eventLog);
                                 await depositProofToNear(relayerNearAccount, false, proof);
+                                relayedERC20ConnectorEventsCounter.inc(1);
                             }
                         } else {
                             console.log('Processing ERC20->NEP-141 deposit event...');
                             const proof = await findProofForEvent(ethersProvider, false, eventLog);
                             await depositProofToNear(relayerNearAccount, false, proof);
+                            relayedERC20ConnectorEventsCounter.inc(1);
                         }
                     }
                 }
