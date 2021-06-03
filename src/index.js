@@ -9,7 +9,7 @@ const keyStore = new nearAPI.keyStores.UnencryptedFileSystemKeyStore(process.env
 
 const { findProofForEvent } = require('./eth_generate_proof');
 const { getDepositedEventsForBlocks, isEventForAurora } = require('./utils_eth');
-const { depositProofToNear } = require('./utils_near');
+const { depositProofToNear, nearIsUsedProof } = require('./utils_near');
 
 const { HttpPrometheus } = require('../utils/http-prometheus');
 
@@ -84,9 +84,8 @@ async function startRelayerFromBlockNumber(ethersProvider, nearJsonRpc, nearNetw
 
                     for (const eventLog of ethCustodianDepositedEvents) {
                         const isAuroraEvent = isEventForAurora(relayerConfig.auroraAccount, eventLog);
-
-                        const logMsg = isAuroraEvent ? 'Processing ETH->AuroraETH deposit event...'
-                                                     : 'Processing ETH->NEP-141 deposit event...';
+                        const logMsg = isAuroraEvent ? '> Processing ETH->AuroraETH deposit event...'
+                                                     : '> Processing ETH->NEP-141 deposit event...';
 
                         if (relayerConfig.relayOnlyAuroraEvents && !isAuroraEvent) {
                             continue;
@@ -94,6 +93,13 @@ async function startRelayerFromBlockNumber(ethersProvider, nearJsonRpc, nearNetw
                             console.log(logMsg);
 
                             const proof = await findProofForEvent(ethersProvider, true, eventLog);
+                            const isUsedProof = await nearIsUsedProof(relayerNearAccount, true, proof)
+
+                            if (isUsedProof) {
+                                console.log("Skipped the event as its proof was already used.");
+                                continue;
+                            }
+
                             await depositProofToNear(relayerNearAccount, true, proof);
                             relayedEthConnectorEventsCounter.inc(1);
                         }
@@ -115,16 +121,23 @@ async function startRelayerFromBlockNumber(ethersProvider, nearJsonRpc, nearNetw
                     console.log(`Found ${erc20LockerDepositedEvents.length} ERC20Locker locked events in blocks [${blockFrom}; ${blockTo}]`);
 
                     for (const eventLog of erc20LockerDepositedEvents) {
-
                         const isAuroraEvent = isEventForAurora(relayerConfig.auroraAccount, eventLog);
-                        const logMsg = isAuroraEvent ? 'Processing ERC20->AuroraERC20 deposit event...'
-                                                     : 'Processing ERC20->NEP-141 deposit event...';
+                        const logMsg = isAuroraEvent ? '> Processing ERC20->AuroraERC20 deposit event...'
+                                                     : '> Processing ERC20->NEP-141 deposit event...';
 
                         if (relayerConfig.relayOnlyAuroraEvents && !isAuroraEvent) {
                             continue;
                         } else {
                             console.log(logMsg);
+
                             const proof = await findProofForEvent(ethersProvider, false, eventLog);
+                            const isUsedProof = await nearIsUsedProof(relayerNearAccount, false, proof)
+
+                            if (isUsedProof) {
+                                console.log("Skipped the event as its proof was already used.");
+                                continue;
+                            }
+
                             await depositProofToNear(relayerNearAccount, false, proof);
                             relayedERC20ConnectorEventsCounter.inc(1);
                         }
