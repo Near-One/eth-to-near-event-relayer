@@ -83,16 +83,16 @@ async function startRelayerFromBlockNumber(ethersProvider, nearJsonRpc, nearNetw
                     console.log(`Found ${ethCustodianDepositedEvents.length} EthCustodian deposited events in blocks [${blockFrom}; ${blockTo}]`);
 
                     for (const eventLog of ethCustodianDepositedEvents) {
-                        if (relayerConfig.relayOnlyAuroraEvents) {
-                            const isAuroraEvent = isEventForAurora(relayerConfig.auroraAccount, eventLog);
-                            if (isAuroraEvent) {
-                                console.log('Processing ETH->AuroraETH deposit event...');
-                                const proof = await findProofForEvent(ethersProvider, true, eventLog);
-                                await depositProofToNear(relayerNearAccount, true, proof);
-                                relayedEthConnectorEventsCounter.inc(1);
-                            }
+                        const isAuroraEvent = isEventForAurora(relayerConfig.auroraAccount, eventLog);
+
+                        const logMsg = isAuroraEvent ? 'Processing ETH->AuroraETH deposit event...'
+                                                     : 'Processing ETH->NEP-141 deposit event...';
+
+                        if (relayerConfig.relayOnlyAuroraEvents && !isAuroraEvent) {
+                            continue;
                         } else {
-                            console.log('Processing ETH->NEP-141 deposit event...');
+                            console.log(logMsg);
+
                             const proof = await findProofForEvent(ethersProvider, true, eventLog);
                             await depositProofToNear(relayerNearAccount, true, proof);
                             relayedEthConnectorEventsCounter.inc(1);
@@ -115,16 +115,15 @@ async function startRelayerFromBlockNumber(ethersProvider, nearJsonRpc, nearNetw
                     console.log(`Found ${erc20LockerDepositedEvents.length} ERC20Locker locked events in blocks [${blockFrom}; ${blockTo}]`);
 
                     for (const eventLog of erc20LockerDepositedEvents) {
-                        if (relayerConfig.relayOnlyAuroraEvents) {
-                            const isAuroraEvent = isEventForAurora(relayerConfig.auroraAccount, eventLog);
-                            if (isAuroraEvent) {
-                                console.log('Processing ERC20->AuroraERC20 deposit event...');
-                                const proof = await findProofForEvent(ethersProvider, false, eventLog);
-                                await depositProofToNear(relayerNearAccount, false, proof);
-                                relayedERC20ConnectorEventsCounter.inc(1);
-                            }
+
+                        const isAuroraEvent = isEventForAurora(relayerConfig.auroraAccount, eventLog);
+                        const logMsg = isAuroraEvent ? 'Processing ERC20->AuroraERC20 deposit event...'
+                                                     : 'Processing ERC20->NEP-141 deposit event...';
+
+                        if (relayerConfig.relayOnlyAuroraEvents && !isAuroraEvent) {
+                            continue;
                         } else {
-                            console.log('Processing ERC20->NEP-141 deposit event...');
+                            console.log(logMsg);
                             const proof = await findProofForEvent(ethersProvider, false, eventLog);
                             await depositProofToNear(relayerNearAccount, false, proof);
                             relayedERC20ConnectorEventsCounter.inc(1);
