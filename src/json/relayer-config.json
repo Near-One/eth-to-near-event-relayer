@@ -3,18 +3,18 @@
   "nearNetwork": "default",
 
   "relayerNearAccount": "testlocal.testnet",
-  "ethOnNearClientAccount": "client.ropsten.testnet",
+  "ethOnNearClientAccount": "0.client.ropsten.testnet",
 
   "erc20LockerAddress": "0xb48e6441524f261e141bc766a7ebd54b19ca7465",
   "rainbowTokenFactoryAccount": "f.ropsten.testnet",
 
-  "ethCustodianAddress": "0x4D8C60b494f02D76CC9D41F835029eC7Ff1A4881",
-  "auroraAccount": "a01.kconnector.testnet",
+  "ethCustodianAddress": "0x4a8FfD609122b80E1da0d95e51a31667804eA890",
+  "auroraAccount": "develop.aurora",
 
   "numRequiredClientConfirmations": 5,
   "pollingIntervalMs": 30000,
 
-  "relayEthConnectorEvents": true,
+  "relayEthConnectorEvents": false,
   "relayERC20Events": true,
-  "relayOnlyAuroraEvents": true
+  "relayOnlyAuroraEvents": false
 }
