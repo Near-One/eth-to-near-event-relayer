@@ -8,8 +8,8 @@
   "erc20LockerAddress": "0xb48e6441524f261e141bc766a7ebd54b19ca7465",
   "rainbowTokenFactoryAccount": "f.ropsten.testnet",
 
-  "ethCustodianAddress": "0x4a8FfD609122b80E1da0d95e51a31667804eA890",
-  "auroraAccount": "develop.aurora",
+  "ethCustodianAddress": "0x9006a6D7d08A388Eeea0112cc1b6b6B15a4289AF",
+  "auroraAccount": "aurora",
 
   "numRequiredClientConfirmations": 5,
   "pollingIntervalMs": 30000,
