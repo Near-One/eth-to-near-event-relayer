@@ -1,10 +1,24 @@
 const BN = require('bn.js')
 const nearAPI = require('near-api-js');
 
+const { ConnectorType } = require('./utils_eth');
 const relayerConfig = require('./json/relayer-config.json');
 
-async function depositProofToNear(nearAccount, isEthConnector, proof) {
-    const connectorContractAddress = isEthConnector ? relayerConfig.auroraAccount : relayerConfig.rainbowTokenFactoryAccount;
+function getConnectorAccount(connectorType) {
+    if (connectorType === ConnectorType.ethCustodian) {
+        return relayerConfig.auroraAccount;
+    } else if (connectorType === ConnectorType.erc20Locker) {
+        return relayerConfig.rainbowTokenFactoryAccount;
+    } else if (connectorType === ConnectorType.eNear) {
+        return relayerConfig.eNearAccount;
+    } else {
+        console.log("SHOULD NEVER GET HERE! Connector account not found");
+        return null;
+    }
+}
+
+async function depositProofToNear(nearAccount, connectorType, proof) {
+    const connectorContractAddress = getConnectorAccount(connectorType);
     const connector = new nearAPI.Contract(
         nearAccount,
         connectorContractAddress,
@@ -25,8 +39,13 @@ async function depositProofToNear(nearAccount, isEthConnector, proof) {
     }
 }
 
-async function nearIsUsedProof(nearAccount, isEthConnector, proof) {
-    const connectorContractAddress = isEthConnector ? relayerConfig.auroraAccount : relayerConfig.rainbowTokenFactoryAccount;
+async function nearIsUsedProof(nearAccount, connectorType, proof) {
+    if (connectorType === ConnectorType.eNear) {
+        console.log("isUsedProof API is not supported for eNear connector. Submitting the proof...");
+        return false;
+    }
+
+    const connectorContractAddress = getConnectorAccount(connectorType);
     const nearEvmContract = new nearAPI.Contract(
         nearAccount,
         connectorContractAddress,
@@ -37,7 +56,7 @@ async function nearIsUsedProof(nearAccount, isEthConnector, proof) {
 
     const res = await nearEvmContract.is_used_proof(proof);
     // EthConnector uses borshified params
-    const booleanRes = isEthConnector ? Boolean(res.codePointAt(0)) : res;
+    const booleanRes = connectorType === ConnectorType.ethCustodian ? Boolean(res.codePointAt(0)) : res;
     return booleanRes;
 }
 

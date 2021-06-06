@@ -8,7 +8,7 @@ const nearAPI = require('near-api-js');
 const keyStore = new nearAPI.keyStores.UnencryptedFileSystemKeyStore(process.env.NEAR_KEY_STORE_PATH);
 
 const { findProofForEvent } = require('./eth_generate_proof');
-const { getDepositedEventsForBlocks, isEventForAurora } = require('./utils_eth');
+const { ConnectorType, getDepositedEventsForBlocks, isEventForAurora } = require('./utils_eth');
 const { depositProofToNear, nearIsUsedProof } = require('./utils_near');
 
 const { HttpPrometheus } = require('../utils/http-prometheus');
@@ -50,6 +50,7 @@ async function startRelayerFromBlockNumber(ethersProvider, nearJsonRpc, nearNetw
     const relayerCurrentBlockNumberGauge = httpPrometheus.gauge('event_relayer_current_block_number', 'Current EthToNearEventRelayer block number');
     const relayedEthConnectorEventsCounter = httpPrometheus.counter('num_relayed_eth_connector_events', 'Number of relayed ETH connector events');
     const relayedERC20ConnectorEventsCounter = httpPrometheus.counter('num_relayed_erc20_connector_events', 'Number of relayed ERC20 connector events');
+    const relayedENearConnectorEventsCounter = httpPrometheus.counter('num_relayed_eNear_connector_events', 'Number of relayed eNEAR connector events');
 
     let currentBlockNumber = blockNumber > 0 ? blockNumber - 1 : 0;
 
@@ -73,7 +74,7 @@ async function startRelayerFromBlockNumber(ethersProvider, nearJsonRpc, nearNetw
                 const ethCustodianDepositedEvents = await getDepositedEventsForBlocks(
                     ethersProvider,
                     relayerConfig.ethCustodianAddress,
-                    true,
+                    ConnectorType.ethCustodian,
                     blockFrom,
                     blockTo
                 );
@@ -92,15 +93,15 @@ async function startRelayerFromBlockNumber(ethersProvider, nearJsonRpc, nearNetw
                         } else {
                             console.log(logMsg);
 
-                            const proof = await findProofForEvent(ethersProvider, true, eventLog);
-                            const isUsedProof = await nearIsUsedProof(relayerNearAccount, true, proof)
+                            const proof = await findProofForEvent(ethersProvider, ConnectorType.ethCustodian, eventLog);
+                            const isUsedProof = await nearIsUsedProof(relayerNearAccount, ConnectorType.ethCustodian, proof);
 
                             if (isUsedProof) {
                                 console.log("Skipped the event as its proof was already used.");
                                 continue;
                             }
 
-                            await depositProofToNear(relayerNearAccount, true, proof);
+                            await depositProofToNear(relayerNearAccount, ConnectorType.ethCustodian, proof);
                             relayedEthConnectorEventsCounter.inc(1);
                         }
                     }
@@ -111,7 +112,7 @@ async function startRelayerFromBlockNumber(ethersProvider, nearJsonRpc, nearNetw
                 const erc20LockerDepositedEvents = await getDepositedEventsForBlocks(
                     ethersProvider,
                     relayerConfig.erc20LockerAddress,
-                    false,
+                    ConnectorType.erc20Locker,
                     blockFrom,
                     blockTo
                 );
@@ -130,20 +131,59 @@ async function startRelayerFromBlockNumber(ethersProvider, nearJsonRpc, nearNetw
                         } else {
                             console.log(logMsg);
 
-                            const proof = await findProofForEvent(ethersProvider, false, eventLog);
-                            const isUsedProof = await nearIsUsedProof(relayerNearAccount, false, proof)
+                            const proof = await findProofForEvent(ethersProvider, ConnectorType.erc20Locker, eventLog);
+                            const isUsedProof = await nearIsUsedProof(relayerNearAccount, ConnectorType.erc20Locker, proof);
 
                             if (isUsedProof) {
                                 console.log("Skipped the event as its proof was already used.");
                                 continue;
                             }
 
-                            await depositProofToNear(relayerNearAccount, false, proof);
+                            await depositProofToNear(relayerNearAccount, ConnectorType.erc20Locker, proof);
                             relayedERC20ConnectorEventsCounter.inc(1);
                         }
                     }
                 }
             }
+
+            if (relayerConfig.relayENearEvents) {
+                const eNearDepositedEvents = await getDepositedEventsForBlocks(
+                    ethersProvider,
+                    relayerConfig.eNearAddress,
+                    connectorType.eNear,
+                    blockFrom,
+                    blockTo
+                );
+
+                if (eNearDepositedEvents.length > 0) {
+                    console.log(`Relaying eNear events.`);
+                    console.log(`Found ${eNearDepositedEvents.length} eNear locked events in blocks [${blockFrom}; ${blockTo}]`);
+
+                    for (const eventLog of eNearDepositedEvents) {
+                        const isAuroraTransferSupported = false; // not available yet
+                        const isAuroraEvent = false;
+                        const logMsg = '> Processing eNEAR->NEP-141 deposit event...';
+
+                        if (isAuroraTransferSupported && relayerConfig.relayOnlyAuroraEvents && !isAuroraEvent) {
+                            continue;
+                        } else {
+                            console.log(logMsg);
+
+                            const proof = await findProofForEvent(ethersProvider, ConnectorType.eNear, eventLog);
+                            const isUsedProof = await nearIsUsedProof(relayerNearAccount, ConnectorType.eNear, proof);
+
+                            if (isUsedProof) {
+                                console.log("Skipped the event as its proof was already used.");
+                                continue;
+                            }
+
+                            await depositProofToNear(relayerNearAccount, ConnectorType.eNear, proof);
+                            relayedENearConnectorEventsCounter.inc(1);
+                        }
+                    }
+                }
+            }
+
             currentBlockNumber = clientLastSafeBlockNumber;
 
             console.log('--------------------------------------------------------------------------------');
