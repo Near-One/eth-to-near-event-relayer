@@ -2,7 +2,7 @@
   "nearJsonRpc": "https://rpc.testnet.near.org/",
   "nearNetwork": "default",
 
-  "relayerNearAccount": "testlocal.testnet",
+  "relayerNearAccount": "event-relayer.testnet",
   "ethOnNearClientAccount": "0.client.ropsten.testnet",
 
   "erc20LockerAddress": "0xb48e6441524f261e141bc766a7ebd54b19ca7465",
