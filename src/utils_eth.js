@@ -7,7 +7,7 @@ const erc20LockerAbi = require('./json/erc20-locker-abi.json');
 
 async function getDepositedEventsForBlocks(provider, contractAddress, isEthCustodian, blockNumberFrom, blockNumberTo) {
     const contractAbi = isEthCustodian ? ethCustodianAbi : erc20LockerAbi;
-    const contract = new ethers.Contract(contractAddress, contractAbi);
+    const contract = new ethers.Contract(contractAddress, contractAbi).connect(provider);
 
     const eventFilter = isEthCustodian
         // TODO: change either to `DepositedToEVM` having new `recipient` with `colon-separator` protocol design or even rename the event to `Deposited`
