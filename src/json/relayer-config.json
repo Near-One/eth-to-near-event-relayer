@@ -11,14 +11,14 @@
   "ethCustodianAddress": "0x9006a6D7d08A388Eeea0112cc1b6b6B15a4289AF",
   "auroraAccount": "aurora",
 
-  "eNearAddress": "0x",
-  "eNearAccount": "enear.ropsten.testnet",
+  "eNearAddress": "0x2b3077b25909f24de5543d1e350c4d60f9e0c3ed",
+  "eNearAccount": "0.e-near.testnet",
 
   "numRequiredClientConfirmations": 5,
   "pollingIntervalMs": 30000,
 
   "relayEthConnectorEvents": false,
-  "relayERC20Events": true,
+  "relayERC20Events": false,
   "relayOnlyAuroraEvents": false,
-  "relayENearEvents": false
+  "relayENearEvents": true
 }
