@@ -14,10 +14,7 @@ for each and submit it to NEAR.
 `$ echo "WEB3_RPC_ENDPOINT=YOUR_WEB3_RPC_ENDPOINT_HERE" >> .env` <br/>
 RPC access can be easily gained from [Alchemy](https://www.alchemyapi.io/).
 
-4. Add to the file Ropsten Private key:
-`$ echo "ROPSTEN_PRIVATE_KEY=YOUR_ROPSTEN_PRIVATE_KEY_HERE" >> .env`
-
-5. Add path to the Near credentials (e.g. this usually will be at `~/.near-credentials` on Linux <br/>
+4. Add path to the Near credentials (e.g. this usually will be at `~/.near-credentials` on Linux <br/>
 and `/Users/<user>/.near-credentials` on MacOS: <br/>
 `$ echo "NEAR_KEY_STORE_PATH=PATH_TO_YOUR_NEAR_CREDENTIALS_HERE" >> .env`
 

@@ -43,10 +43,8 @@ function getEventFilter(contract, connectorType) {
 }
 
 async function getDepositedEventsForBlocks(provider, contractAddress, connectorType, blockNumberFrom, blockNumberTo) {
-    const signerAccount = new ethers.Wallet(process.env.ROPSTEN_PRIVATE_KEY, provider);
-
     const contractABI = getConnectorABI(connectorType);
-    const contract = new ethers.Contract(contractAddress, contractABI, signerAccount);
+    const contract = new ethers.Contract(contractAddress, contractABI).connect(provider);
     const eventFilter = getEventFilter(contract, connectorType);
 
     console.log(`Event filter: ${JSON.stringify(eventFilter)}`);

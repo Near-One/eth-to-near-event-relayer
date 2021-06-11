@@ -61,7 +61,7 @@ async function nearIsUsedProof(nearAccount, connectorType, proof) {
         nearAccount,
         connectorContractAddress,
         {
-            changeMethods: ['is_used_proof'],
+            viewMethods: ['is_used_proof'],
         }
     );
 
