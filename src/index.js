@@ -150,7 +150,7 @@ async function startRelayerFromBlockNumber(ethersProvider, nearJsonRpc, nearNetw
                 const eNearDepositedEvents = await getDepositedEventsForBlocks(
                     ethersProvider,
                     relayerConfig.eNearAddress,
-                    connectorType.eNear,
+                    ConnectorType.eNear,
                     blockFrom,
                     blockTo
                 );

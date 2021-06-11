@@ -17,22 +17,33 @@ function getConnectorAccount(connectorType) {
     }
 }
 
-async function depositProofToNear(nearAccount, connectorType, proof) {
+async function getConnector(nearAccount, connectorType) {
     const connectorContractAddress = getConnectorAccount(connectorType);
+    const contractChangeMethods = (connectorType === ConnectorType.eNear) ? ['finalise_eth_to_near_transfer'] : ['deposit'];
     const connector = new nearAPI.Contract(
         nearAccount,
         connectorContractAddress,
         {
-            changeMethods: ['deposit']
+            changeMethods: contractChangeMethods,
         }
     );
+    return connector;
+}
+
+async function depositProofToNear(nearAccount, connectorType, proof) {
+    const connectorContractAddress = getConnectorAccount(connectorType);
+    const connector = await getConnector(nearAccount, connectorType);
 
     const gas_limit = new BN('300' + '0'.repeat(12)); // Gas limit
     const payment_for_storage = new BN('100000000000000000000').mul(new BN('600')); // Attached payment to pay for the storage
 
     console.log(`Submitting deposit transaction from: ${nearAccount.accountId} account to ${connectorContractAddress}`);
     try {
-        await connector.deposit(proof, gas_limit, payment_for_storage);
+        if (connectorType === ConnectorType.eNear) {
+            await connector.finalise_eth_to_near_transfer(proof, gas_limit, payment_for_storage);
+        } else {
+            await connector.deposit(proof, gas_limit, payment_for_storage);
+        }
         console.log(`Submitted.`);
     } catch (error) {
         console.log(error);
