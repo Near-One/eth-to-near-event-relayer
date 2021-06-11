@@ -9,7 +9,7 @@ const { serialize: serializeBorsh } = require('near-api-js/lib/utils/serialize')
 const Path = require('path')
 const fs = require('fs').promises
 
-const { ConnectorType } = require('./utils_eth');
+const { ConnectorType } = require('./types');
 
 class BorshProof {
   constructor (proof) {

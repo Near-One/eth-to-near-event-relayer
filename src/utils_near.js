@@ -1,7 +1,7 @@
 const BN = require('bn.js')
 const nearAPI = require('near-api-js');
 
-const { ConnectorType } = require('./utils_eth');
+const { ConnectorType } = require('./types');
 const relayerConfig = require('./json/relayer-config.json');
 
 function getConnectorAccount(connectorType) {

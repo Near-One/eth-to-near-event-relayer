@@ -6,12 +6,7 @@ const ethCustodianAbi = require('./json/eth-custodian-abi.json');
 const erc20LockerAbi = require('./json/erc20-locker-abi.json');
 const eNearAbi = require('./json/eth-near-abi.json');
 
-const ConnectorType = Object.freeze({
-    "ethCustodian": {},
-    "erc20Locker": {},
-    "eNear": {},
-});
-
+const { ConnectorType } = require('./types');
 
 function getConnectorABI(connectorType) {
     let contractABI;
@@ -72,6 +67,5 @@ function isEventForAurora(nearAuroraAccount, eventLog) {
     return receiverContract === nearAuroraAccount;
 }
 
-exports.ConnectorType = ConnectorType;
 exports.getDepositedEventsForBlocks = getDepositedEventsForBlocks;
 exports.isEventForAurora = isEventForAurora;

@@ -8,7 +8,8 @@ const nearAPI = require('near-api-js');
 const keyStore = new nearAPI.keyStores.UnencryptedFileSystemKeyStore(process.env.NEAR_KEY_STORE_PATH);
 
 const { findProofForEvent } = require('./eth_generate_proof');
-const { ConnectorType, getDepositedEventsForBlocks, isEventForAurora } = require('./utils_eth');
+const { getDepositedEventsForBlocks, isEventForAurora } = require('./utils_eth');
+const { ConnectorType } = require('./types');
 const { depositProofToNear, nearIsUsedProof } = require('./utils_near');
 
 const { HttpPrometheus } = require('../utils/http-prometheus');
