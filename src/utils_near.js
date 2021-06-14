@@ -25,6 +25,18 @@ async function depositProofToNear(nearAccount, isEthConnector, proof) {
     }
 }
 
+function parseBool(data) {
+    // Try to deserialize first as borsh
+    if (data.length === 1) {
+        if (data[0] === 0)
+            return false;
+        else if (data[0] === 1)
+            return true;
+    }
+
+    return JSON.parse(Buffer.from(data).toString());
+}
+
 async function nearIsUsedProof(nearAccount, isEthConnector, proof) {
     const connectorContractAddress = isEthConnector ? relayerConfig.auroraAccount : relayerConfig.rainbowTokenFactoryAccount;
     const nearEvmContract = new nearAPI.Contract(
@@ -35,10 +47,7 @@ async function nearIsUsedProof(nearAccount, isEthConnector, proof) {
         }
     );
 
-    const res = await nearEvmContract.is_used_proof(proof);
-    // EthConnector uses borshified params
-    const booleanRes = isEthConnector ? Boolean(res.codePointAt(0)) : res;
-    return booleanRes;
+    return await nearEvmContract.is_used_proof(Buffer.from(proof), options = { parse: parseBool });
 }
 
 exports.depositProofToNear = depositProofToNear;
