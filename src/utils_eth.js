@@ -47,7 +47,6 @@ async function getDepositedEventsForBlocks(provider, contractAddress, connectorT
     const contract = new ethers.Contract(contractAddress, contractABI).connect(provider);
     const eventFilter = getEventFilter(contract, connectorType);
 
-    console.log(`Event filter: ${JSON.stringify(eventFilter)}`);
     const depositedEvents = await contract.queryFilter(eventFilter, blockNumberFrom, blockNumberTo);
 
     return depositedEvents;
