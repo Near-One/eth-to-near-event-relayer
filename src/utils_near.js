@@ -50,6 +50,18 @@ async function depositProofToNear(nearAccount, connectorType, proof) {
     }
 }
 
+function parseBool(data) {
+    // Try to deserialize first as borsh
+    if (data.length === 1) {
+        if (data[0] === 0)
+            return false;
+        else if (data[0] === 1)
+            return true;
+    }
+
+    return JSON.parse(Buffer.from(data).toString());
+}
+
 async function nearIsUsedProof(nearAccount, connectorType, proof) {
     if (connectorType === ConnectorType.eNear) {
         console.log("isUsedProof API is not supported for eNear connector. Submitting the proof...");
@@ -65,10 +77,7 @@ async function nearIsUsedProof(nearAccount, connectorType, proof) {
         }
     );
 
-    const res = await nearEvmContract.is_used_proof(proof);
-    // EthConnector uses borshified params
-    const booleanRes = connectorType === ConnectorType.ethCustodian ? Boolean(res.codePointAt(0)) : res;
-    return booleanRes;
+    return await nearEvmContract.is_used_proof(Buffer.from(proof), options = { parse: parseBool });
 }
 
 exports.depositProofToNear = depositProofToNear;
