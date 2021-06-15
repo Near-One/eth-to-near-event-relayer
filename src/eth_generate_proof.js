@@ -9,6 +9,8 @@ const { serialize: serializeBorsh } = require('near-api-js/lib/utils/serialize')
 const Path = require('path')
 const fs = require('fs').promises
 
+const { ConnectorType } = require('./types');
+
 class BorshProof {
   constructor (proof) {
     Object.assign(this, proof)
@@ -29,7 +31,23 @@ const proofBorshSchema = new Map([
   }]
 ]);
 
-async function findProofForEvent (ethersProvider, isEthConnector, eventLog) {
+function getFilenamePrefix(connectorType) {
+    let filenamePrefix = 'proofdata_';
+    if (connectorType === ConnectorType.ethCustodian) {
+        filenamePrefix += 'ethCustodian';
+    } else if (connectorType === ConnectorType.erc20Locker) {
+        filenamePrefix += 'erc20Locker';
+    } else if (connectorType === ConnectorType.eNear) {
+        filenamePrefix += 'eNear';
+    } else {
+        console.log("SHOULD NEVER GET HERE!");
+        return 'unknown';
+    }
+
+    return filenamePrefix;
+}
+
+async function findProofForEvent (ethersProvider, connectorType, eventLog) {
     const receipt = await eventLog.getTransactionReceipt();
     receipt.cumulativeGasUsed = receipt.cumulativeGasUsed.toNumber();
 
@@ -67,7 +85,7 @@ async function findProofForEvent (ethersProvider, isEthConnector, eventLog) {
         proof: formattedProof.proof,
     }
 
-    const filenamePrefix = 'proofdata_' + (isEthConnector === true ? 'ethCustodian' : 'erc20Locker');
+    const filenamePrefix = getFilenamePrefix(connectorType);
     const path = 'build/proofs';
     const file = Path.join(path, `${filenamePrefix}_${args.receipt_index}_${args.log_index}_${receipt.transactionHash}.json`)
     await fs.writeFile(file, JSON.stringify(args))
