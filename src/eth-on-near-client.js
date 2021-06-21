@@ -1,5 +1,4 @@
 const BN = require('bn.js')
-const blockFromRpc = require('ethereumjs-block/from-rpc')
 const utils = require('ethereumjs-util')
 const {
   Web3,
