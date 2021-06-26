@@ -1,0 +1,24 @@
+{
+  "nearJsonRpc": "https://rpc.mainnet.near.org/",
+  "nearNetwork": "mainnet",
+
+  "relayerNearAccount": "event-relayer.near",
+  "ethOnNearClientAccount": "client.bridge.near",
+
+  "erc20LockerAddress": "0x23ddd3e3692d1861ed57ede224608875809e127f",
+  "rainbowTokenFactoryAccount": "factory.bridge.near",
+
+  "ethCustodianAddress": "0x6BFaD42cFC4EfC96f529D786D643Ff4A8B89FA52",
+  "auroraAccount": "aurora",
+
+  "eNearAddress": "0x85F17Cf997934a597031b2E18a9aB6ebD4B9f6a4",
+  "eNearAccount": "e-near.near",
+
+  "numRequiredClientConfirmations": 20,
+  "pollingIntervalMs": 30000,
+
+  "relayEthConnectorEvents": true,
+  "relayERC20Events": true,
+  "relayOnlyAuroraEvents": false,
+  "relayENearEvents": false
+}
