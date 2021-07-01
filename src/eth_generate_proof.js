@@ -1,6 +1,7 @@
 const ethers = require('ethers');
 
 const blockFromRpc = require('@ethereumjs/block/dist/from-rpc')
+const Common = require('@ethereumjs/common')
 const Tree = require('merkle-patricia-tree');
 const { encode } = require('eth-util-lite');
 const { Header, Proof, Receipt, Log } = require('eth-object');
@@ -9,6 +10,7 @@ const utils = require('ethereumjs-util');
 const { serialize: serializeBorsh } = require('near-api-js/lib/utils/serialize');
 const Path = require('path')
 const fs = require('fs').promises
+const Web3 = require('web3');
 
 const { ConnectorType } = require('./types');
 
@@ -54,7 +56,10 @@ async function findProofForEvent(ethersProvider, connectorType, eventLog) {
 
     console.log(`Generating the proof for TX with hash: ${receipt.transactionHash} at height ${receipt.blockNumber}`);
 
-    const block = await ethersProvider.getBlock(receipt.blockNumber);
+    /// TODO: Fix this hack
+    let web3 = new Web3(ethersProvider.connection.url);
+    const block = await web3.eth.getBlock(receipt.blockNumber);
+    // const block = await ethersProvider.getBlock(receipt.blockNumber);
     const tree = await buildTree(ethersProvider, block);
 
     const proof = await extractProof(
@@ -118,32 +123,17 @@ async function buildTree(ethersProvider, block) {
         })
     );
 
+    const computedRoot = tree.root.toString('hex');
+    const expectedRoot = block.receiptsRoot.slice(2);
+
+    if (computedRoot !== expectedRoot) {
+        throw { message: "Invalid root", computedRoot, expectedRoot };
+    }
+
     return tree;
 }
 
-/// TODO: This two function were copied from rainbow-bridge
-///       Move them to rainbow-bridge-client and use it from there.
-/// Get Ethereum block by number from RPC, and returns raw json object.
-async function getEthBlock(number, ethNodeUrl) {
-    /// Need to call RPC directly, since function `blockFromRpc` works
-    /// when all fields returned by RPC are present. After EIP1559 was introduced
-    /// tools that abstract this calls are missing the field `baseFeePerGas`
-    blockData = await got.post(ethNodeUrl, {
-        json: {
-            "id": 0,
-            "jsonrpc": "2.0",
-            "method": "eth_getBlockByNumber",
-            "params": [
-                "0x" + number.toString(16),
-                false
-            ]
-        },
-        responseType: "json"
-    });
-
-    return blockData.body.result;
-}
-
+/// TODO: This function was copied from rainbow-bridge. Move it to rainbow-bridge-client and use it from there.
 /// bridgeId matches nearNetworkId. It is one of two strings [testnet / mainnet]
 function web3BlockToRlp(blockData, bridgeId) {
     let chain;
@@ -174,15 +164,13 @@ async function extractProof(ethersProvider, block, tree, transactionIndex) {
 
     const blockData = await ethersProvider.send(
         'eth_getBlockByNumber',
-        [ethers.BigNumber.from(block.number)._hex, true]);
+        [ethers.BigNumber.from(block.number)._hex, false]);
 
-    console.log({ blockData });
-    process.exit(0);
+    // TODO: Use proper network here
+    const header_rlp = web3BlockToRlp(blockData, 'testnet');
 
-    // Correctly compose and encode the header.
-    const header = Header.fromObject(blockData);
     return {
-        header_rlp: header.serialize(),
+        header_rlp,
         receiptProof: Proof.fromStack(stack),
         txIndex: transactionIndex
     };

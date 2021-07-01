@@ -9,8 +9,8 @@
     "bn": "^1.0.5",
     "dotenv": "^8.2.0",
     "eth-connector": "https://github.com/aurora-is-near/eth-connector",
-    "ethers": "^5.1.0",
-    "eth-object": "https://github.com/near/eth-object#fb57468391112502792ba5fd8c586f5d2467a89f",
+    "ethers": "^5.4.0",
+    "eth-object": "https://github.com/near/eth-object#8f75a8c9fa53647b34852e2e2fb115e11e3c4ea1",
     "eth-util-lite": "near/eth-util-lite#master",
     "merkle-patricia-tree": "^2.3.2",
     "near-api-js": "https://github.com/near/near-api-js#fef7f683fca86980f3509987226fbc7f63b455cb",
@@ -18,6 +18,7 @@
     "promisfy": "^1.2.0",
     "rainbow-bridge-utils": "1.0.0",
     "rainbow-token-connector": "https://github.com/aurora-is-near/rainbow-token-connector",
-    "@ethereumjs/block": "^3.3.0"
+    "@ethereumjs/block": "^3.3.0",
+    "web3": "^1.4.0"
   }
 }
