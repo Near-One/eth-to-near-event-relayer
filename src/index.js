@@ -87,7 +87,7 @@ async function startRelayerFromBlockNumber(ethersProvider, nearJsonRpc, nearNetw
                     for (const eventLog of ethCustodianDepositedEvents) {
                         const isAuroraEvent = isEventForAurora(relayerConfig.auroraAccount, eventLog);
                         const logMsg = isAuroraEvent ? '> Processing ETH->AuroraETH deposit event...'
-                                                     : '> Processing ETH->NEP-141 deposit event...';
+                            : '> Processing ETH->NEP-141 deposit event...';
 
                         if (relayerConfig.relayOnlyAuroraEvents && !isAuroraEvent) {
                             continue;
@@ -125,7 +125,7 @@ async function startRelayerFromBlockNumber(ethersProvider, nearJsonRpc, nearNetw
                     for (const eventLog of erc20LockerDepositedEvents) {
                         const isAuroraEvent = isEventForAurora(relayerConfig.auroraAccount, eventLog);
                         const logMsg = isAuroraEvent ? '> Processing ERC20->AuroraERC20 deposit event...'
-                                                     : '> Processing ERC20->NEP-141 deposit event...';
+                            : '> Processing ERC20->NEP-141 deposit event...';
 
                         if (relayerConfig.relayOnlyAuroraEvents && !isAuroraEvent) {
                             continue;
@@ -190,13 +190,13 @@ async function startRelayerFromBlockNumber(ethersProvider, nearJsonRpc, nearNetw
             console.log('--------------------------------------------------------------------------------');
         } else if (currentBlockNumber > ethOnNearLastBlockNumber) {
             console.log(`=> It seems that EthOnNearClient is not synced. `
-                        + `Current relayer block height: ${currentBlockNumber}; `
-                        + `EthOnNearClient block height: ${ethOnNearLastBlockNumber}`);
+                + `Current relayer block height: ${currentBlockNumber}; `
+                + `EthOnNearClient block height: ${ethOnNearLastBlockNumber}`);
         } else {
             console.log(`=> Waiting for the new blocks in EthOnNearClient. `
-                        + `Current relayer block height: ${currentBlockNumber}; `
-                        + `EthOnNearClient block height: ${ethOnNearLastBlockNumber}. `
-                        + `Required num confirmations: ${relayerConfig.numRequiredClientConfirmations}`);
+                + `Current relayer block height: ${currentBlockNumber}; `
+                + `EthOnNearClient block height: ${ethOnNearLastBlockNumber}. `
+                + `Required num confirmations: ${relayerConfig.numRequiredClientConfirmations}`);
         }
 
         await sleep(relayerConfig.pollingIntervalMs);

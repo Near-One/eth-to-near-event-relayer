@@ -1,6 +1,7 @@
 const ethers = require('ethers');
 
-const Tree = require('merkle-patricia-tree') ;
+const blockFromRpc = require('@ethereumjs/block/dist/from-rpc')
+const Tree = require('merkle-patricia-tree');
 const { encode } = require('eth-util-lite');
 const { Header, Proof, Receipt, Log } = require('eth-object');
 const { promisfy } = require('promisfy');
@@ -12,23 +13,23 @@ const fs = require('fs').promises
 const { ConnectorType } = require('./types');
 
 class BorshProof {
-  constructor (proof) {
-    Object.assign(this, proof)
-  }
+    constructor(proof) {
+        Object.assign(this, proof)
+    }
 };
 
 const proofBorshSchema = new Map([
-  [BorshProof, {
-    kind: 'struct',
-    fields: [
-      ['log_index', 'u64'],
-      ['log_entry_data', ['u8']],
-      ['receipt_index', 'u64'],
-      ['receipt_data', ['u8']],
-      ['header_data', ['u8']],
-      ['proof', [['u8']]]
-    ]
-  }]
+    [BorshProof, {
+        kind: 'struct',
+        fields: [
+            ['log_index', 'u64'],
+            ['log_entry_data', ['u8']],
+            ['receipt_index', 'u64'],
+            ['receipt_data', ['u8']],
+            ['header_data', ['u8']],
+            ['proof', [['u8']]]
+        ]
+    }]
 ]);
 
 function getFilenamePrefix(connectorType) {
@@ -47,7 +48,7 @@ function getFilenamePrefix(connectorType) {
     return filenamePrefix;
 }
 
-async function findProofForEvent (ethersProvider, connectorType, eventLog) {
+async function findProofForEvent(ethersProvider, connectorType, eventLog) {
     const receipt = await eventLog.getTransactionReceipt();
     receipt.cumulativeGasUsed = receipt.cumulativeGasUsed.toNumber();
 
@@ -100,10 +101,10 @@ async function findProofForEvent (ethersProvider, connectorType, eventLog) {
     return serializedProof;
 }
 
-async function buildTree (ethersProvider, block) {
+async function buildTree(ethersProvider, block) {
     const blockReceipts = await Promise.all(
         block.transactions.map(t =>
-                               ethersProvider.getTransactionReceipt(t))
+            ethersProvider.getTransactionReceipt(t))
     );
 
     // Build a Patricia Merkle Trie
@@ -120,7 +121,51 @@ async function buildTree (ethersProvider, block) {
     return tree;
 }
 
-async function extractProof (ethersProvider, block, tree, transactionIndex) {
+/// TODO: This two function were copied from rainbow-bridge
+///       Move them to rainbow-bridge-client and use it from there.
+/// Get Ethereum block by number from RPC, and returns raw json object.
+async function getEthBlock(number, ethNodeUrl) {
+    /// Need to call RPC directly, since function `blockFromRpc` works
+    /// when all fields returned by RPC are present. After EIP1559 was introduced
+    /// tools that abstract this calls are missing the field `baseFeePerGas`
+    blockData = await got.post(ethNodeUrl, {
+        json: {
+            "id": 0,
+            "jsonrpc": "2.0",
+            "method": "eth_getBlockByNumber",
+            "params": [
+                "0x" + number.toString(16),
+                false
+            ]
+        },
+        responseType: "json"
+    });
+
+    return blockData.body.result;
+}
+
+/// bridgeId matches nearNetworkId. It is one of two strings [testnet / mainnet]
+function web3BlockToRlp(blockData, bridgeId) {
+    let chain;
+    if (bridgeId === "testnet") {
+        chain = "ropsten";
+    } else {
+        chain = "mainnet";
+    }
+    const common = new Common.default({ chain });
+
+    /// baseFeePerGas was introduced after london hard fork.
+    /// TODO: Use better way to detect current hard fork.
+    if (blockData.baseFeePerGas !== undefined) {
+        common.setHardfork("london")
+        common.setEIPs([1559])
+    }
+
+    const block = blockFromRpc.default(blockData, [], { common });
+    return block.header.serialize();
+}
+
+async function extractProof(ethersProvider, block, tree, transactionIndex) {
     const encodedTransactionIndex = encode(transactionIndex);
     const [, , stack] = await promisfy(
         tree.findPath,
@@ -130,6 +175,9 @@ async function extractProof (ethersProvider, block, tree, transactionIndex) {
     const blockData = await ethersProvider.send(
         'eth_getBlockByNumber',
         [ethers.BigNumber.from(block.number)._hex, true]);
+
+    console.log({ blockData });
+    process.exit(0);
 
     // Correctly compose and encode the header.
     const header = Header.fromObject(blockData);
