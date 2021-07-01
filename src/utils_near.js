@@ -67,6 +67,10 @@ async function nearIsUsedProof(nearAccount, connectorType, proof) {
         console.log("isUsedProof API is not supported for eNear connector. Submitting the proof...");
         return false;
     }
+    if (connectorType === ConnectorType.erc20Locker) {
+        console.log("isUsedProof API is not supported for erc20 connector. Submitting the proof...");
+        return false;
+    }
 
     const connectorContractAddress = getConnectorAccount(connectorType);
     const nearEvmContract = new nearAPI.Contract(

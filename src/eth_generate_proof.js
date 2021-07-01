@@ -9,6 +9,10 @@ const { serialize: serializeBorsh } = require('near-api-js/lib/utils/serialize')
 const Path = require('path')
 const fs = require('fs').promises
 
+require('dotenv').config();
+const Web3 = require('web3');
+const web3 = new Web3(process.env.WEB3_RPC_ENDPOINT);
+
 const { ConnectorType } = require('./types');
 
 class BorshProof {
@@ -54,7 +58,11 @@ async function findProofForEvent (ethersProvider, connectorType, eventLog) {
     console.log(`Generating the proof for TX with hash: ${receipt.transactionHash} at height ${receipt.blockNumber}`);
 
     const block = await ethersProvider.getBlock(receipt.blockNumber);
-    const tree = await buildTree(ethersProvider, block);
+    // const tree = await buildTreeEthers(ethersProvider, block);
+
+    const web3_receipt = await web3.eth.getTransactionReceipt(receipt.transactionHash);
+    const web3_block = await web3.eth.getBlock(web3_receipt.blockNumber);
+    const tree = await buildTreeWeb3(web3_block);
 
     const proof = await extractProof(
         ethersProvider,
@@ -91,6 +99,9 @@ async function findProofForEvent (ethersProvider, connectorType, eventLog) {
     await fs.writeFile(file, JSON.stringify(args))
     console.log(`Proof has been successfully generated and saved at ${file}`);
 
+    //console.log(`Proof JSON: ${JSON.stringify(formattedProof)}`);
+
+
     const serializedProof = serializeBorsh(proofBorshSchema, formattedProof);
 
     const borshFile = Path.join(path, `${filenamePrefix}_${args.receipt_index}_${args.log_index}_${receipt.transactionHash}.borsh`)
@@ -100,7 +111,7 @@ async function findProofForEvent (ethersProvider, connectorType, eventLog) {
     return serializedProof;
 }
 
-async function buildTree (ethersProvider, block) {
+async function buildTreeEthers (ethersProvider, block) {
     const blockReceipts = await Promise.all(
         block.transactions.map(t =>
                                ethersProvider.getTransactionReceipt(t))
@@ -111,7 +122,7 @@ async function buildTree (ethersProvider, block) {
     await Promise.all(
         blockReceipts.map(receipt => {
             const path = encode(receipt.transactionIndex)
-            receipt.cumulativeGasUsed = receipt.cumulativeGasUsed.toNumber();
+	    receipt.cumulativeGasUsed = receipt.cumulativeGasUsed.toNumber();
             const serializedReceipt = Receipt.fromObject(receipt).serialize()
             return promisfy(tree.put, tree)(path, serializedReceipt)
         })
@@ -119,6 +130,27 @@ async function buildTree (ethersProvider, block) {
 
     return tree;
 }
+
+async function buildTreeWeb3(block) {
+    const blockReceipts = await Promise.all(
+    	block.transactions.map(t =>
+                               web3.eth.getTransactionReceipt(t))
+    );
+    
+    // Build a Patricia Merkle Trie
+    const tree = new Tree();
+    await Promise.all(
+    	blockReceipts.map(receipt => {
+    		const path = encode(receipt.transactionIndex)
+    		const serializedReceipt = Receipt.fromWeb3(receipt).serialize()
+    		return promisfy(tree.put, tree)(path, serializedReceipt)
+    	})
+    );
+    
+    return tree;
+}
+
+
 
 async function extractProof (ethersProvider, block, tree, transactionIndex) {
     const encodedTransactionIndex = encode(transactionIndex);
@@ -131,8 +163,16 @@ async function extractProof (ethersProvider, block, tree, transactionIndex) {
         'eth_getBlockByNumber',
         [ethers.BigNumber.from(block.number)._hex, true]);
 
+
+  //console.log(`Block data: ${JSON.stringify(blockData)}`);
+
+
     // Correctly compose and encode the header.
     const header = Header.fromObject(blockData);
+
+	//console.log(`Header: ${JSON.stringify(header)}`);
+	//console.log(`Stack: ${JSON.stringify(stack)}`);
+
     return {
         header_rlp: header.serialize(),
         receiptProof: Proof.fromStack(stack),
