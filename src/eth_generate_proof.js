@@ -166,8 +166,7 @@ async function extractProof(ethersProvider, block, tree, transactionIndex) {
         'eth_getBlockByNumber',
         [ethers.BigNumber.from(block.number)._hex, false]);
 
-    // TODO: Use proper network here
-    const header_rlp = web3BlockToRlp(blockData, 'testnet');
+    const header_rlp = Header.fromRpc(blockData).serialize();
 
     return {
         header_rlp,
