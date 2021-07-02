@@ -2,6 +2,9 @@ require('dotenv').config();
 
 const ethers = require('ethers');
 
+const StatsD = require('hot-shots');
+const dogstatsd = new StatsD();
+
 const relayerConfig = require('./json/relayer-config.json');
 
 const nearAPI = require('near-api-js');
@@ -56,11 +59,18 @@ async function startRelayerFromBlockNumber(ethersProvider, nearJsonRpc, nearNetw
     let currentBlockNumber = blockNumber > 0 ? blockNumber - 1 : 0;
 
     while (true) {
+        const currentRelayerBalance = await relayerNearAccount.getAccountBalance().available;
+        // Fix this as the balance is of `string` type
+        //dogstatsd.gauge('event_relayer.account_near_balance', currentRelayerBalance);
+
         const ethOnNearLastBlockNumber = await getEthOnNearLastBlockNumber(relayerNearAccount, relayerConfig.ethOnNearClientAccount);
         const clientLastSafeBlockNumber = ethOnNearLastBlockNumber - relayerConfig.numRequiredClientConfirmations;
 
         ethOnNearLastBlockNumberGauge.set(ethOnNearLastBlockNumber);
         relayerCurrentBlockNumberGauge.set(currentBlockNumber);
+
+        dogstatsd.gauge('eth_on_near_client.current_block_number', ethOnNearLastBlockNumber);
+        dogstatsd.gauge('event_relayer.current_block_number', currentBlockNumber);
 
         //console.log(`Current block number: ${currentBlockNumber}`);
         //console.log(`EthOnNear last block number: ${ethOnNearLastBlockNumber}`);
@@ -97,13 +107,18 @@ async function startRelayerFromBlockNumber(ethersProvider, nearJsonRpc, nearNetw
                             const proof = await findProofForEvent(ethersProvider, ConnectorType.ethCustodian, eventLog);
                             const isUsedProof = await nearIsUsedProof(relayerNearAccount, ConnectorType.ethCustodian, proof);
 
+                            dogstatsd.increment('event_relayer.ETH.num_processed_events');
+
                             if (isUsedProof) {
                                 console.log("Skipped the event as its proof was already used.");
+                                dogstatsd.increment('event_relayer.ETH.num_skipped_events');
                                 continue;
                             }
 
                             await depositProofToNear(relayerNearAccount, ConnectorType.ethCustodian, proof);
                             relayedEthConnectorEventsCounter.inc(1);
+                            dogstatsd.increment('event_relayer.ETH.num_relayed_events');
+                            dogstatsd.gauge('event_relayer.ETH.last_block_with_relayed_event', eventLog.blockNumber);
                         }
                     }
                 }
@@ -135,13 +150,18 @@ async function startRelayerFromBlockNumber(ethersProvider, nearJsonRpc, nearNetw
                             const proof = await findProofForEvent(ethersProvider, ConnectorType.erc20Locker, eventLog);
                             const isUsedProof = await nearIsUsedProof(relayerNearAccount, ConnectorType.erc20Locker, proof);
 
+                            dogstatsd.increment('event_relayer.erc20.num_processed_events');
+
                             if (isUsedProof) {
                                 console.log("Skipped the event as its proof was already used.");
+                                dogstatsd.increment('event_relayer.erc20.num_skipped_events');
                                 continue;
                             }
 
                             await depositProofToNear(relayerNearAccount, ConnectorType.erc20Locker, proof);
                             relayedERC20ConnectorEventsCounter.inc(1);
+                            dogstatsd.increment('event_relayer.erc20.num_relayed_events');
+                            dogstatsd.gauge('event_relayer.erc20.last_block_with_relayed_event', eventLog.blockNumber);
                         }
                     }
                 }
@@ -173,13 +193,18 @@ async function startRelayerFromBlockNumber(ethersProvider, nearJsonRpc, nearNetw
                             const proof = await findProofForEvent(ethersProvider, ConnectorType.eNear, eventLog);
                             const isUsedProof = await nearIsUsedProof(relayerNearAccount, ConnectorType.eNear, proof);
 
+                            dogstatsd.increment('event_relayer.eNEAR.num_processed_events');
+
                             if (isUsedProof) {
                                 console.log("Skipped the event as its proof was already used.");
+                                dogstatsd.increment('event_relayer.eNEAR.num_skipped_events');
                                 continue;
                             }
 
                             await depositProofToNear(relayerNearAccount, ConnectorType.eNear, proof);
                             relayedENearConnectorEventsCounter.inc(1);
+                            dogstatsd.increment('event_relayer.eNEAR.num_relayed_events');
+                            dogstatsd.gauge('event_relayer.eNEAR.last_block_with_relayed_event', eventLog.blockNumber);
                         }
                     }
                 }
