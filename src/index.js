@@ -15,7 +15,7 @@ const metrics = require('./metrics');
 const { findProofForEvent } = require('./eth_generate_proof');
 const { getDepositedEventsForBlocks, isEventForAurora } = require('./utils_eth');
 const { ConnectorType } = require('./types');
-const { depositProofToNear, nearIsUsedProof } = require('./utils_near');
+const { depositProofToNear, nearIsUsedProof, balanceNearYoctoToNano } = require('./utils_near');
 
 const { HttpPrometheus } = require('../utils/http-prometheus');
 
@@ -85,9 +85,9 @@ async function startRelayerFromBlockNumber(ethersProvider, nearJsonRpc, nearNetw
     let currentBlockNumber = blockNumber > 0 ? blockNumber - 1 : 0;
 
     while (true) {
-        const currentRelayerBalance = await relayerNearAccount.getAccountBalance().available;
-        // Fix this as the balance is of `string` type
-        //dogstatsd.gauge('event_relayer.account_near_balance', currentRelayerBalance);
+        const currentRelayerNearBalance = await relayerNearAccount.getAccountBalance();
+        const currentRelayerNanoNearBalance = balanceNearYoctoToNano(currentRelayerNearBalance.available);
+        dogstatsd.gauge(metrics.GAUGE_EVENT_RELAYER_ACCOUNT_NEAR_BALANCE, currentRelayerNanoNearBalance);
 
         const ethOnNearLastBlockNumber = await getEthOnNearLastBlockNumber(relayerNearAccount, relayerConfig.ethOnNearClientAccount);
         const clientLastSafeBlockNumber = ethOnNearLastBlockNumber - relayerConfig.numRequiredClientConfirmations;
