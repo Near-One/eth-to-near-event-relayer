@@ -13,8 +13,9 @@ const keyStore = new nearAPI.keyStores.UnencryptedFileSystemKeyStore(process.env
 const metrics = require('./metrics');
 
 const { findProofForEvent } = require('./eth_generate_proof');
-const { getDepositedEventsForBlocks, isEventForAurora } = require('./utils_eth');
 const { ConnectorType } = require('./types');
+const { isLastSessionExists, getLastSessionBlockNumber, recordSession } = require('./utils_relayer.js');
+const { getDepositedEventsForBlocks, isEventForAurora } = require('./utils_eth');
 const { depositProofToNear, nearIsUsedProof, balanceNearYoctoToNano } = require('./utils_near');
 
 const { HttpPrometheus } = require('../utils/http-prometheus');
@@ -276,12 +277,29 @@ async function startRelayerFromBlockNumber(ethersProvider, nearJsonRpc, nearNetw
 }
 
 async function main() {
-    if (process.argv.length != 3) {
-        console.log("Incorrect usage of the script. Please call:");
-        console.log("$ node", process.argv[1], "<eth_block_number_to_start_from>");
-        return;
+    const argv = require('yargs')(process.argv.slice(2))
+        .example('$0 --start-from-block 1234', 'Start the event-relayer from the given block number')
+        .example('$0 --restore-last-session', 'Start the event-relayer restoring the latest session')
+        .boolean(['restore-last-session'])
+        .describe('start-from-block', 'The block number from which to start relaying')
+        .help('h')
+        .alias('h', 'help')
+        .argv;
+
+    let blockNumberFrom = 0;
+    if (argv.restoreLastSession) {
+        console.log(`Restarting from the last session...`);
+
+        if (!isLastSessionExists()) {
+            throw 'Session file does not exist! Can not restore from the last session';
+        }
+
+        blockNumberFrom = getLastSessionBlockNumber();
+    } else if (!argv.startFromBlock) {
+        console.log('Incorrect usage of the script. `start-from-block` variable is not specified');
+    } else {
+        blockNumberFrom = Number(argv.startFromBlock);
     }
-    const blockNumberFrom = process.argv[2];
 
     const url = process.env.WEB3_RPC_ENDPOINT;
     const ethersProvider = new ethers.providers.JsonRpcProvider(url);
