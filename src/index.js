@@ -86,6 +86,8 @@ async function startRelayerFromBlockNumber(ethersProvider, nearJsonRpc, nearNetw
     let currentBlockNumber = blockNumber > 0 ? blockNumber - 1 : 0;
 
     while (true) {
+        recordSession(currentBlockNumber);
+
         const currentRelayerNearBalance = await relayerNearAccount.getAccountBalance();
         const currentRelayerNanoNearBalance = balanceNearYoctoToNano(currentRelayerNearBalance.available);
         dogstatsd.gauge(metrics.GAUGE_EVENT_RELAYER_ACCOUNT_NEAR_BALANCE, currentRelayerNanoNearBalance);
