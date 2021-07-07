@@ -1,3 +1,4 @@
 node_modules/
 build/
 .env
+.event_relayer_session
