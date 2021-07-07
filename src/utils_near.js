@@ -63,11 +63,6 @@ function parseBool(data) {
 }
 
 async function nearIsUsedProof(nearAccount, connectorType, proof) {
-    if (connectorType === ConnectorType.eNear) {
-        console.log("isUsedProof API is not supported for eNear connector. Submitting the proof...");
-        return false;
-    }
-
     const connectorContractAddress = getConnectorAccount(connectorType);
     const nearEvmContract = new nearAPI.Contract(
         nearAccount,
