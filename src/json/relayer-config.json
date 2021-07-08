@@ -1,24 +1,24 @@
 {
-  "nearJsonRpc": "https://rpc.testnet.near.org/",
-  "nearNetwork": "default",
+  "nearJsonRpc": "https://rpc.mainnet.near.org/",
+  "nearNetwork": "mainnet",
 
-  "relayerNearAccount": "event-relayer.testnet",
-  "ethOnNearClientAccount": "0.client.ropsten.testnet",
+  "relayerNearAccount": "event-relayer.near",
+  "ethOnNearClientAccount": "client.bridge.near",
 
-  "erc20LockerAddress": "0xb48e6441524f261e141bc766a7ebd54b19ca7465",
-  "rainbowTokenFactoryAccount": "f.ropsten.testnet",
+  "erc20LockerAddress": "0x23ddd3e3692d1861ed57ede224608875809e127f",
+  "rainbowTokenFactoryAccount": "factory.bridge.near",
 
-  "ethCustodianAddress": "0x9006a6D7d08A388Eeea0112cc1b6b6B15a4289AF",
+  "ethCustodianAddress": "0x6BFaD42cFC4EfC96f529D786D643Ff4A8B89FA52",
   "auroraAccount": "aurora",
 
-  "eNearAddress": "0x2b3077b25909f24de5543d1e350c4d60f9e0c3ed",
-  "eNearAccount": "0.e-near.testnet",
+  "eNearAddress": "0x85F17Cf997934a597031b2E18a9aB6ebD4B9f6a4",
+  "eNearAccount": "e-near.near",
 
-  "numRequiredClientConfirmations": 5,
+  "numRequiredClientConfirmations": 20,
   "pollingIntervalMs": 30000,
 
-  "relayEthConnectorEvents": false,
-  "relayERC20Events": false,
+  "relayEthConnectorEvents": true,
+  "relayERC20Events": true,
   "relayOnlyAuroraEvents": false,
   "relayENearEvents": true
 }
