@@ -2,7 +2,7 @@
 # yarn lockfile v1
 
 
-"@ethereumjs/block@^3.3.0":
+"@ethereumjs/block@^3.4.0":
   version "3.4.0"
   resolved "https://registry.yarnpkg.com/@ethereumjs/block/-/block-3.4.0.tgz#4747b0c06220ee10cbdfe1cbde8cbb0677b1b074"
   integrity sha512-umKAoTX32yXzErpIksPHodFc/5y8bmZMnOl6hWy5Vd8xId4+HKFUOyEiN16Y97zMwFRysRpcrR6wBejfqc6Bmg==
@@ -1441,14 +1441,6 @@ eth-lib@^0.1.26:
     ws "^3.0.0"
     xhr-request-promise "^0.1.2"
 
-"eth-object@github:near/eth-object#54e03b8aac8208cf724e206d49ffb8bdd30451d7":
-  version "1.0.3"
-  resolved "https://codeload.github.com/near/eth-object/tar.gz/54e03b8aac8208cf724e206d49ffb8bdd30451d7"
-  dependencies:
-    eth-util-lite near/eth-util-lite#master
-    ethereumjs-util "^7.0.3"
-    web3 "^1.2.9"
-
 "eth-object@https://github.com/near/eth-object#383b6ea68c7050bea4cab6950c1d5a7fa553e72b":
   version "1.0.3"
   resolved "https://github.com/near/eth-object#383b6ea68c7050bea4cab6950c1d5a7fa553e72b"
@@ -1457,9 +1449,16 @@ eth-lib@^0.1.26:
     ethereumjs-util "^7.0.3"
     web3 "^1.2.9"
 
-"eth-util-lite@github:near/eth-util-lite#master", eth-util-lite@near/eth-util-lite#master:
+eth-object@near/eth-object#54e03b8aac8208cf724e206d49ffb8bdd30451d7:
+  version "1.0.3"
+  resolved "https://codeload.github.com/near/eth-object/tar.gz/54e03b8aac8208cf724e206d49ffb8bdd30451d7"
+  dependencies:
+    eth-util-lite near/eth-util-lite#master
+    ethereumjs-util "^7.0.3"
+    web3 "^1.2.9"
+
+eth-util-lite@near/eth-util-lite#master:
   version "1.0.1"
-  uid ae0210cbe127b4d43ba01fd7cd4898d1a3f6c96a
   resolved "https://codeload.github.com/near/eth-util-lite/tar.gz/ae0210cbe127b4d43ba01fd7cd4898d1a3f6c96a"
   dependencies:
     bn.js "^4.11.8"

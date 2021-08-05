@@ -18,7 +18,7 @@
     "promisfy": "^1.2.0",
     "rainbow-bridge-utils": "1.0.0",
     "rainbow-token-connector": "https://github.com/aurora-is-near/rainbow-token-connector",
-    "@ethereumjs/block": "^3.3.0",
+    "@ethereumjs/block": "^3.4.0",
     "web3": "^1.4.0"
   }
 }
