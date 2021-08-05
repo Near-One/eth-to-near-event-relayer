@@ -6,7 +6,7 @@
   "author": "dev@near.org",
   "license": "MIT",
   "dependencies": {
-    "@ethereumjs/block": "^3.3.0",
+    "@ethereumjs/block": "^3.4.0",
     "bn": "^1.0.5",
     "dotenv": "^8.2.0",
     "eth-connector": "https://github.com/aurora-is-near/eth-connector",
