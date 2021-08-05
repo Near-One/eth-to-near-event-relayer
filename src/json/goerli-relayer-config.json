@@ -1,0 +1,18 @@
+{
+  "nearJsonRpc": "https://archival-rpc.testnet.near.org/",
+  "nearNetwork": "testnet",
+  "relayerNearAccount": "event-relayer.goerli.testnet",
+  "ethOnNearClientAccount": "client4.goerli.testnet",
+  "erc20LockerAddress": "0xb0e1c70db60c75c548c0d27d432d25337c9cd974",
+  "rainbowTokenFactoryAccount": "factory.goerli.testnet",
+  "ethCustodianAddress": "0x8df799f7aB927c894Fe4c81122238F76aDA1a7d3",
+  "auroraAccount": "develop.aurora",
+  "eNearAddress": "todo",
+  "eNearAccount": "todo",
+  "numRequiredClientConfirmations": 5,
+  "pollingIntervalMs": 30000,
+  "relayEthConnectorEvents": true,
+  "relayERC20Events": true,
+  "relayENearEvents": false,
+  "relayOnlyAuroraEvents": false
+}
