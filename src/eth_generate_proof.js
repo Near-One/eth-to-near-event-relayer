@@ -59,6 +59,8 @@ async function findProofForEvent(ethersProvider, connectorType, eventLog) {
     /// TODO: Fix this hack
     let web3 = new Web3(ethersProvider.connection.url);
     const block = await web3.eth.getBlock(receipt.blockNumber);
+    // Set miner to all zeroes until https://github.com/ethereum/go-ethereum/commit/62ad17fb0046243255048fbf8cb0882f48d8d850 is live
+    block.miner = "0x0000000000000000000000000000000000000000";
     // const block = await ethersProvider.getBlock(receipt.blockNumber);
     const tree = await buildTree(ethersProvider, block);
 
@@ -165,6 +167,8 @@ async function extractProof(ethersProvider, block, tree, transactionIndex) {
     const blockData = await ethersProvider.send(
         'eth_getBlockByNumber',
         [ethers.BigNumber.from(block.number)._hex, false]);
+    // Set miner to all zeroes until https://github.com/ethereum/go-ethereum/commit/62ad17fb0046243255048fbf8cb0882f48d8d850 is live
+    blockData.miner = "0x0000000000000000000000000000000000000000";
 
     const header_rlp = Header.fromRpc(blockData).serialize();
 
