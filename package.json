@@ -11,7 +11,7 @@
     "dotenv": "^8.2.0",
     "eth-connector": "https://github.com/aurora-is-near/eth-connector",
     "ethers": "^5.4.0",
-    "eth-object": "https://github.com/near/eth-object#fe3f12d186610f5fdfc53994f0bd7fdc6e7fab17",
+    "eth-object": "https://github.com/near/eth-object#383b6ea68c7050bea4cab6950c1d5a7fa553e72b",
     "eth-util-lite": "near/eth-util-lite#master",
     "ethers": "^5.4.0",
     "hot-shots": "^8.3.2",
@@ -21,6 +21,7 @@
     "promisfy": "^1.2.0",
     "rainbow-bridge-utils": "1.0.0",
     "rainbow-token-connector": "https://github.com/aurora-is-near/rainbow-token-connector",
+    "@ethereumjs/block": "^3.4.0",
     "web3": "^1.4.0"
   }
 }

@@ -1,6 +1,7 @@
 {
   "nearJsonRpc": "https://archival-rpc.testnet.near.org/",
   "nearNetwork": "testnet",
+  "relayerNearAccount": "event.testnet",
   "ethOnNearClientAccount": "t2.client.ropsten.testnet",
   "erc20LockerAddress": "0xb48e6441524f261e141bc766a7ebd54b19ca7465",
   "rainbowTokenFactoryAccount": "f.ropsten.testnet",
