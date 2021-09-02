@@ -4,6 +4,8 @@ const nearAPI = require('near-api-js');
 const { ConnectorType } = require('./types');
 const relayerConfig = require('./json/relayer-config.json');
 
+const NEAR_YOCTO_TO_NANO = new BN(10).pow(new BN(15))
+
 function getConnectorAccount(connectorType) {
     if (connectorType === ConnectorType.ethCustodian) {
         return relayerConfig.auroraAccount;
@@ -75,5 +77,11 @@ async function nearIsUsedProof(nearAccount, connectorType, proof) {
     return await nearEvmContract.is_used_proof(Buffer.from(proof), options = { parse: parseBool });
 }
 
+function balanceNearYoctoToNano(balanceYocto) {
+    const balanceNanoNear = new BN(balanceYocto).div(NEAR_YOCTO_TO_NANO).toNumber()
+    return balanceNanoNear;
+}
+
 exports.depositProofToNear = depositProofToNear;
 exports.nearIsUsedProof = nearIsUsedProof;
+exports.balanceNearYoctoToNano = balanceNearYoctoToNano;
