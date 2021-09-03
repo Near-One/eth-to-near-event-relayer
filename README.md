@@ -22,3 +22,9 @@ and `/Users/<user>/.near-credentials` on MacOS: <br/>
 
 To start relayer run:<br/>
 `$ make run START_FROM_BLOCK=<required_block_number_to_start_from_here>`
+
+To restore the last session run:<br/>
+`$ make restore-last-session`
+
+Alternatively, you can use the script directly. To get the list of available commands type:<br/>
+`$ node src/index.js --help`
