@@ -1,32 +1,26 @@
 require('dotenv').config();
 
-const ethers = require('ethers');
+import { providers, Event, Contract, EventFilter, ContractInterface } from 'ethers';
+import { ConnectorType } from './types';
+import ethCustodianAbi from './json/eth-custodian-abi.json';
+import erc20LockerAbi from './json/erc20-locker-abi.json';
+import eNearAbi from './json/eth-near-abi.json';
 
-const ethCustodianAbi = require('./json/eth-custodian-abi.json');
-const erc20LockerAbi = require('./json/erc20-locker-abi.json');
-const eNearAbi = require('./json/eth-near-abi.json');
-
-const { ConnectorType } = require('./types');
-
-function getConnectorABI(connectorType) {
-    let contractABI;
-
+function getConnectorABI(connectorType: ConnectorType): ContractInterface {
     if (connectorType === ConnectorType.ethCustodian) {
-        contractABI = ethCustodianAbi;
+        return ethCustodianAbi;
     } else if (connectorType === ConnectorType.erc20Locker) {
-        contractABI = erc20LockerAbi;
+        return erc20LockerAbi;
     } else if (connectorType === ConnectorType.eNear) {
-        contractABI = eNearAbi;
+        return eNearAbi;
     } else {
         console.log("SHOULD NEVER GET HERE! Connector ABI not found");
         return null;
     }
-
-    return contractABI;
 }
 
-function getEventFilter(contract, connectorType) {
-    let eventFilter;
+function getEventFilter(contract: Contract, connectorType: ConnectorType): EventFilter {
+    let eventFilter: EventFilter;
 
     if (connectorType === ConnectorType.ethCustodian) {
         eventFilter = contract.filters.Deposited(null);
@@ -42,9 +36,10 @@ function getEventFilter(contract, connectorType) {
     return eventFilter;
 }
 
-async function getDepositedEventsForBlocks(provider, contractAddress, connectorType, blockNumberFrom, blockNumberTo) {
+export async function getDepositedEventsForBlocks(provider: providers.JsonRpcProvider, contractAddress: string,
+    connectorType: ConnectorType, blockNumberFrom: number, blockNumberTo: number): Promise<Array<Event>> {
     const contractABI = getConnectorABI(connectorType);
-    const contract = new ethers.Contract(contractAddress, contractABI).connect(provider);
+    const contract = new Contract(contractAddress, contractABI).connect(provider);
     const eventFilter = getEventFilter(contract, connectorType);
 
     const depositedEvents = await contract.queryFilter(eventFilter, blockNumberFrom, blockNumberTo);
@@ -52,7 +47,7 @@ async function getDepositedEventsForBlocks(provider, contractAddress, connectorT
     return depositedEvents;
 }
 
-function isEventForAurora(nearAuroraAccount, eventLog) {
+export function isEventForAurora(nearAuroraAccount: string, eventLog: Event) {
     const recipientMessage = eventLog.args[1];
     const recipientArgs = recipientMessage.split(':');
 
@@ -63,6 +58,3 @@ function isEventForAurora(nearAuroraAccount, eventLog) {
     const receiverContract = recipientArgs[0];
     return receiverContract === nearAuroraAccount;
 }
-
-exports.getDepositedEventsForBlocks = getDepositedEventsForBlocks;
-exports.isEventForAurora = isEventForAurora;

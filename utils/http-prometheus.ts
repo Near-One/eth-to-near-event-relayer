@@ -1,7 +1,12 @@
-const http = require('http')
+import http from 'http'
 
-class HttpPrometheus {
-  constructor (port, metricsPrefix = 'near_bridge_') {
+export class HttpPrometheus {
+  port: number
+  metricsPrefix: string;
+  promClient: any;
+  server: http.Server;
+
+  constructor (port: number, metricsPrefix:string = 'near_bridge_') {
     const self = this
     self.metricsPrefix = metricsPrefix
     self.promClient = require('prom-client')
@@ -9,25 +14,27 @@ class HttpPrometheus {
       register: new self.promClient.Registry()
     })
 
-    if (port !== 'null') {
-      self.port = port
-      // create a server object:
-      self.server = http.createServer(async function (req, res) {
-        if (req.url === '/metrics') {
-          const metrics = await self.promClient.register.metrics()
-          res.write(metrics) // write a response to the client
-          res.end() // end the response
-          return
-        }
-        res.write('Not Found')
-        res.end()
-      })
-
-      self.server.listen(self.port)
+    if (port < 1) {
+      return;
     }
+
+    self.port = port
+    // create a server object:
+    self.server = http.createServer(async function (req, res) {
+      if (req.url === '/metrics') {
+        const metrics = await self.promClient.register.metrics()
+        res.write(metrics) // write a response to the client
+        res.end() // end the response
+        return
+      }
+      res.write('Not Found')
+      res.end()
+    })
+
+    self.server.listen(self.port)
   }
 
-  gauge (name, help, labels = {}) {
+  gauge (name: string, help: string, labels = {}) {
     const self = this
     const gauge = new self.promClient.Gauge({
       name: self.metricsPrefix + name,
@@ -38,7 +45,7 @@ class HttpPrometheus {
     return gauge
   }
 
-  counter (name, help, labels = {}) {
+  counter (name: string, help: string, labels = {}) {
     const self = this
     const counter = new self.promClient.Counter({
       name: self.metricsPrefix + name,
@@ -48,8 +55,4 @@ class HttpPrometheus {
     self.promClient.register.registerMetric(counter)
     return counter
   }
-}
-
-module.exports = {
-  HttpPrometheus
 }

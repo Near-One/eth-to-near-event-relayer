@@ -1,17 +1,11 @@
-const BN = require('bn.js')
-const utils = require('ethereumjs-util')
-const {
-  Web3,
-  BorshContract,
-  hexToBuffer,
-  readerToHex
-} = require('rainbow-bridge-utils')
+import { BorshContract, hexToBuffer, readerToHex, Web3 } from 'rainbow-bridge-utils';
+import nearAPI from 'near-api-js';
 
-const borshSchema = {
+export const borshSchema = {
   bool: {
     kind: 'function',
-    ser: (b) => Buffer.from(Web3.utils.hexToBytes(b ? '0x01' : '0x00')),
-    deser: (z) => readerToHex(1)(z) === '0x01'
+    ser: (b: any) => Buffer.from(Web3.utils.hexToBytes(b ? '0x01' : '0x00')),
+    deser: (z: any) => readerToHex(1)(z) === '0x01'
   },
   dagMerkleRootInput: {
     kind: 'struct',
@@ -42,8 +36,8 @@ const borshSchema = {
   }
 }
 
-class EthOnNearClientContract extends BorshContract {
-  constructor (account, contractId) {
+export class EthOnNearClientContract extends BorshContract {
+  constructor (account: nearAPI.Account, contractId: string) {
     super(borshSchema, account, contractId, {
       viewMethods: [
         {
@@ -82,7 +76,9 @@ class EthOnNearClientContract extends BorshContract {
       ]
     })
   }
-}
 
-exports.EthOnNearClientContract = EthOnNearClientContract
-exports.borshSchema = borshSchema
+  async lastBlockNumber(): Promise<Number> {
+    const self: any = this;
+    return self.last_block_number();
+  }
+}

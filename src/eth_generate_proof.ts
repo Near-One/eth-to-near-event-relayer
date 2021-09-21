@@ -1,21 +1,37 @@
-const ethers = require('ethers');
+import Tree from 'merkle-patricia-tree';
+import { encode } from 'eth-util-lite';
+import { promisfy } from 'promisfy';
+import { Header, Proof, Receipt, Log } from 'eth-object';
 
-const blockFromRpc = require('@ethereumjs/block/dist/from-rpc')
-const Common = require('@ethereumjs/common')
-const Tree = require('merkle-patricia-tree');
-const { encode } = require('eth-util-lite');
-const { Header, Proof, Receipt, Log } = require('eth-object');
-const { promisfy } = require('promisfy');
-const utils = require('ethereumjs-util');
-const { serialize: serializeBorsh } = require('near-api-js/lib/utils/serialize');
-const Path = require('path')
-const fs = require('fs').promises
-const Web3 = require('web3');
+import ethers from 'ethers';
+import blockFromRpc from '@ethereumjs/block/dist/from-rpc'
+import Common from '@ethereumjs/common'
+import utils = require('ethereumjs-util');
+import { serialize as serializeBorsh } from 'near-api-js/lib/utils/serialize';
+import Path = require('path')
+import {promises as fs} from "fs"
+import Web3 from 'web3';
+import { BlockTransactionString } from 'web3-eth';
+import { ConnectorType } from './types';
 
-const { ConnectorType } = require('./types');
+interface IProof {
+    log_index: number;
+    log_entry_data: number[];
+    receipt_index: number;
+    receipt_data: number[];
+    header_data: number[];
+    proof: number[][];
+}
 
-class BorshProof {
-    constructor(proof) {
+export class BorshProof implements IProof {
+    log_index: number;
+    log_entry_data: number[];
+    receipt_index: number;
+    receipt_data: number[];
+    header_data: number[];
+    proof: number[][];
+
+    constructor(proof: IProof) {
         Object.assign(this, proof)
     }
 };
@@ -34,7 +50,7 @@ const proofBorshSchema = new Map([
     }]
 ]);
 
-function getFilenamePrefix(connectorType) {
+function getFilenamePrefix(connectorType: ConnectorType) {
     let filenamePrefix = 'proofdata_';
     if (connectorType === ConnectorType.ethCustodian) {
         filenamePrefix += 'ethCustodian';
@@ -50,9 +66,9 @@ function getFilenamePrefix(connectorType) {
     return filenamePrefix;
 }
 
-async function findProofForEvent(ethersProvider, connectorType, eventLog) {
+export async function findProofForEvent(ethersProvider: ethers.providers.JsonRpcProvider, connectorType: ConnectorType, eventLog: ethers.Event) : Promise<Uint8Array> {
     const receipt = await eventLog.getTransactionReceipt();
-    receipt.cumulativeGasUsed = receipt.cumulativeGasUsed.toNumber();
+    receipt.cumulativeGasUsed = receipt.cumulativeGasUsed;
 
     console.log(`Generating the proof for TX with hash: ${receipt.transactionHash} at height ${receipt.blockNumber}`);
 
@@ -106,7 +122,7 @@ async function findProofForEvent(ethersProvider, connectorType, eventLog) {
     return serializedProof;
 }
 
-async function buildTree(ethersProvider, block) {
+async function buildTree(ethersProvider: ethers.providers.JsonRpcProvider, block: BlockTransactionString): Promise<Tree.Trie> {
     const blockReceipts = await Promise.all(
         block.transactions.map(t =>
             ethersProvider.getTransactionReceipt(t))
@@ -117,14 +133,14 @@ async function buildTree(ethersProvider, block) {
     await Promise.all(
         blockReceipts.map(receipt => {
             const path = encode(receipt.transactionIndex)
-            receipt.cumulativeGasUsed = receipt.cumulativeGasUsed.toNumber();
+            receipt.cumulativeGasUsed = receipt.cumulativeGasUsed;
             const serializedReceipt = Receipt.fromObject(receipt).serialize()
             return promisfy(tree.put, tree)(path, serializedReceipt)
         })
     );
 
     const computedRoot = tree.root.toString('hex');
-    const expectedRoot = block.receiptsRoot.slice(2);
+    const expectedRoot = block.receiptRoot.slice(2);
 
     if (computedRoot !== expectedRoot) {
         throw { message: "Invalid root", computedRoot, expectedRoot };
@@ -135,14 +151,14 @@ async function buildTree(ethersProvider, block) {
 
 /// TODO: This function was copied from rainbow-bridge. Move it to rainbow-bridge-client and use it from there.
 /// bridgeId matches nearNetworkId. It is one of two strings [testnet / mainnet]
-function web3BlockToRlp(blockData, bridgeId) {
-    let chain;
+function web3BlockToRlp(blockData: any, bridgeId: string) {
+    let chain: string;
     if (bridgeId === "testnet") {
         chain = "ropsten";
     } else {
         chain = "mainnet";
     }
-    const common = new Common.default({ chain });
+    const common = new Common ({ chain : chain });
 
     /// baseFeePerGas was introduced after london hard fork.
     /// TODO: Use better way to detect current hard fork.
@@ -151,11 +167,11 @@ function web3BlockToRlp(blockData, bridgeId) {
         common.setEIPs([1559])
     }
 
-    const block = blockFromRpc.default(blockData, [], { common });
+    const block = blockFromRpc(blockData, [], { common });
     return block.header.serialize();
 }
 
-async function extractProof(ethersProvider, block, tree, transactionIndex) {
+async function extractProof(ethersProvider: ethers.providers.JsonRpcProvider, block: BlockTransactionString, tree, transactionIndex) {
     const encodedTransactionIndex = encode(transactionIndex);
     const [, , stack] = await promisfy(
         tree.findPath,
@@ -174,5 +190,3 @@ async function extractProof(ethersProvider, block, tree, transactionIndex) {
         txIndex: transactionIndex
     };
 }
-
-exports.findProofForEvent = findProofForEvent;

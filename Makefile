@@ -2,8 +2,9 @@
 
 START_FROM_BLOCK=10147800
 
+default:
+	tsc
 run:
-	node src/index.js --start-from-block $(START_FROM_BLOCK)
-
+	node build/src/index.js --start-from-block $(START_FROM_BLOCK)
 restore-last-session:
-	node src/index.js --restore-last-session
+	node build/src/index.js --restore-last-session
