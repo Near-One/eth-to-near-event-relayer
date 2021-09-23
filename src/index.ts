@@ -86,7 +86,7 @@ async function startRelayerFromBlockNumber(ethersProvider: ethers.providers.Json
             console.log(`Processing blocks: [${blockFrom}; ${blockTo}]`);
 
             for (let relay of relayEvents){
-                relay.processEvent(blockFrom, blockTo);
+                await relay.processEvent(blockFrom, blockTo);
             }
 
             currentBlockNumber = clientLastSafeBlockNumber;

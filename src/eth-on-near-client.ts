@@ -1,5 +1,5 @@
 import { BorshContract, hexToBuffer, readerToHex, Web3 } from 'rainbow-bridge-utils';
-import nearAPI from 'near-api-js';
+import { Account } from 'near-api-js';
 
 export const borshSchema = {
   bool: {
@@ -37,7 +37,7 @@ export const borshSchema = {
 }
 
 export class EthOnNearClientContract extends BorshContract {
-  constructor (account: nearAPI.Account, contractId: string) {
+  constructor (account: Account, contractId: string) {
     super(borshSchema, account, contractId, {
       viewMethods: [
         {

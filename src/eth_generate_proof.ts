@@ -2,14 +2,13 @@ import Tree from 'merkle-patricia-tree';
 import { encode } from 'eth-util-lite';
 import { promisfy } from 'promisfy';
 import { Header, Proof, Receipt, Log } from 'eth-object';
-
-import ethers from 'ethers';
+import * as ethers from 'ethers';
 import blockFromRpc from '@ethereumjs/block/dist/from-rpc'
 import Common from '@ethereumjs/common'
-import utils = require('ethereumjs-util');
+import * as utils from 'ethereumjs-util';
 import { serialize as serializeBorsh } from 'near-api-js/lib/utils/serialize';
 import Path = require('path')
-import {promises as fs} from "fs"
+import { promises as fs } from "fs"
 import Web3 from 'web3';
 import { BlockTransactionString } from 'web3-eth';
 import { ConnectorType } from './types';
@@ -34,7 +33,7 @@ export class BorshProof implements IProof {
     constructor(proof: IProof) {
         Object.assign(this, proof)
     }
-};
+}
 
 const proofBorshSchema = new Map([
     [BorshProof, {
@@ -67,15 +66,14 @@ function getFilenamePrefix(connectorType: ConnectorType) {
 }
 
 export async function findProofForEvent(ethersProvider: ethers.providers.JsonRpcProvider, connectorType: ConnectorType, eventLog: ethers.Event) : Promise<Uint8Array> {
-    const receipt = await eventLog.getTransactionReceipt();
-    receipt.cumulativeGasUsed = receipt.cumulativeGasUsed;
+    const receipt: any = await eventLog.getTransactionReceipt();
+    receipt.cumulativeGasUsed = receipt.cumulativeGasUsed.toNumber();
 
     console.log(`Generating the proof for TX with hash: ${receipt.transactionHash} at height ${receipt.blockNumber}`);
 
     /// TODO: Fix this hack
     let web3 = new Web3(ethersProvider.connection.url);
     const block = await web3.eth.getBlock(receipt.blockNumber);
-    // const block = await ethersProvider.getBlock(receipt.blockNumber);
     const tree = await buildTree(ethersProvider, block);
 
     const proof = await extractProof(
@@ -109,20 +107,20 @@ export async function findProofForEvent(ethersProvider: ethers.providers.JsonRpc
 
     const filenamePrefix = getFilenamePrefix(connectorType);
     const path = 'build/proofs';
-    const file = Path.join(path, `${filenamePrefix}_${args.receipt_index}_${args.log_index}_${receipt.transactionHash}.json`)
-    await fs.writeFile(file, JSON.stringify(args))
+    const file = Path.join(path, `${filenamePrefix}_${args.receipt_index}_${args.log_index}_${receipt.transactionHash}.json`);
+    await fs.writeFile(file, JSON.stringify(args));
     console.log(`Proof has been successfully generated and saved at ${file}`);
 
     const serializedProof = serializeBorsh(proofBorshSchema, formattedProof);
 
-    const borshFile = Path.join(path, `${filenamePrefix}_${args.receipt_index}_${args.log_index}_${receipt.transactionHash}.borsh`)
+    const borshFile = Path.join(path, `${filenamePrefix}_${args.receipt_index}_${args.log_index}_${receipt.transactionHash}.borsh`);
     await fs.writeFile(borshFile, serializedProof);
     console.log(`Borsh-serialized proof has been successfully generated and saved at ${borshFile}`);
 
     return serializedProof;
 }
 
-async function buildTree(ethersProvider: ethers.providers.JsonRpcProvider, block: BlockTransactionString): Promise<Tree.Trie> {
+async function buildTree(ethersProvider: ethers.providers.JsonRpcProvider, block: any): Promise<Tree.Trie> {
     const blockReceipts = await Promise.all(
         block.transactions.map(t =>
             ethersProvider.getTransactionReceipt(t))
@@ -131,16 +129,16 @@ async function buildTree(ethersProvider: ethers.providers.JsonRpcProvider, block
     // Build a Patricia Merkle Trie
     const tree = new Tree();
     await Promise.all(
-        blockReceipts.map(receipt => {
+        blockReceipts.map((receipt: any) => {
             const path = encode(receipt.transactionIndex)
-            receipt.cumulativeGasUsed = receipt.cumulativeGasUsed;
+            receipt.cumulativeGasUsed = receipt.cumulativeGasUsed.toNumber();
             const serializedReceipt = Receipt.fromObject(receipt).serialize()
             return promisfy(tree.put, tree)(path, serializedReceipt)
         })
     );
 
     const computedRoot = tree.root.toString('hex');
-    const expectedRoot = block.receiptRoot.slice(2);
+    const expectedRoot = block.receiptsRoot.slice(2);
 
     if (computedRoot !== expectedRoot) {
         throw { message: "Invalid root", computedRoot, expectedRoot };

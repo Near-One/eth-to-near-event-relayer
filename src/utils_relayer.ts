@@ -1,4 +1,4 @@
-import fs from 'fs';
+import * as fs from 'fs';
 
 const LAST_PROCESSED_BLOCK_SESSION_FILE_NAME = '.event_relayer_session';
 
@@ -20,8 +20,7 @@ export function getLastSessionBlockNumber() {
 
     try {
         const last_block_str = fs.readFileSync(LAST_PROCESSED_BLOCK_SESSION_FILE_NAME, 'utf-8');
-        const last_block_number = Number(last_block_str);
-        return last_block_number;
+        return Number(last_block_str);
     } catch (err) {
         console.error(err);
         return -1;

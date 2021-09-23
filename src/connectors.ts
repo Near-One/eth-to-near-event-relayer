@@ -110,7 +110,7 @@ export function getConnectorAccount(connectorType: ConnectorType): string {
         case ConnectorType.erc20Locker:
             return relayerConfig.rainbowTokenFactoryAccount;
         case ConnectorType.eNear:
-            relayerConfig.eNearAccount;
+            return relayerConfig.eNearAccount;
         default:
             console.log("SHOULD NEVER GET HERE! Connector account not found");
             return null;

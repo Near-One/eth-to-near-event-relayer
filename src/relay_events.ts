@@ -27,7 +27,7 @@ export abstract class RelayEvents {
     protected connectorType: ConnectorType;
     protected gaugeEvents: GaugeEvents;
 
-    constructor(account: Account, ethersProvider: providers.JsonRpcProvider, dogstatsd: StatsD, connectorType: ConnectorType, gaugeEvents: GaugeEvents) {
+    protected constructor(account: Account, ethersProvider: providers.JsonRpcProvider, dogstatsd: StatsD, connectorType: ConnectorType, gaugeEvents: GaugeEvents) {
         this.relayerNearAccount = account;
         this.ethersProvider = ethersProvider;
         this.dogstatsd = dogstatsd;
@@ -97,7 +97,7 @@ export class RelayEthEvents extends RelayEvents {
             if (relayerConfig.relayOnlyAuroraEvents && !isAuroraEvent) {
                 continue;
             } else {
-                this.process(eventLog, logMsg);
+                await this.process(eventLog, logMsg);
             }
         }
     }
@@ -134,7 +134,7 @@ export class RelayERC20Events extends RelayEvents {
             if (relayerConfig.relayOnlyAuroraEvents && !isAuroraEvent) {
                 continue;
             } else {
-                this.process(eventLog, logMsg);
+                await this.process(eventLog, logMsg);
             }
         }
     }
@@ -172,7 +172,7 @@ export class RelayENearEvents extends RelayEvents {
             if (isAuroraTransferSupported && relayerConfig.relayOnlyAuroraEvents && !isAuroraEvent) {
                 continue;
             } else {
-                this.process(eventLog, logMsg);
+                await this.process(eventLog, logMsg);
             }
         }
     }
