@@ -5,7 +5,7 @@ import { isLastSessionExists, getLastSessionBlockNumber, recordSession } from '.
 import { balanceNearYoctoToNano } from './utils_near';
 import { HttpPrometheus } from '../utils/http-prometheus';
 import { EthOnNearClientContract } from './eth-on-near-client';
-import { RelayEvents, RelayEthEvents, RelayERC20Events, RelayENearEvents } from "./relay_events"
+import { EventRelayer, EthEventRelayer, ERC20EventRelayer, ENearEventRelayer } from "./relay_events"
 import * as ethers from 'ethers';
 import { StatsD } from 'hot-shots';
 const dogstatsd = new StatsD();
@@ -49,18 +49,18 @@ async function startRelayerFromBlockNumber(ethersProvider: ethers.providers.Json
     const relayerCurrentBlockNumberGauge = httpPrometheus.gauge('event_relayer_current_block_number', 'Current EthToNearEventRelayer block number');
 
     let currentBlockNumber = blockNumber > 0 ? blockNumber - 1 : 0;
-    let relayEvents: Array<RelayEvents> = [];
+    let relayEvents: Array<EventRelayer> = [];
 
     if (relayerConfig.relayEthConnectorEvents) {
-        relayEvents.push(new RelayEthEvents(relayerNearAccount, ethersProvider, httpPrometheus, dogstatsd));
+        relayEvents.push(new EthEventRelayer(relayerNearAccount, ethersProvider, httpPrometheus, dogstatsd));
     }
 
     if (relayerConfig.relayERC20Events) {
-        relayEvents.push(new RelayERC20Events(relayerNearAccount, ethersProvider, httpPrometheus, dogstatsd));
+        relayEvents.push(new ERC20EventRelayer(relayerNearAccount, ethersProvider, httpPrometheus, dogstatsd));
     }
 
     if (relayerConfig.relayENearEvents) {
-        relayEvents.push(new RelayENearEvents(relayerNearAccount, ethersProvider, httpPrometheus, dogstatsd));
+        relayEvents.push(new ENearEventRelayer(relayerNearAccount, ethersProvider, httpPrometheus, dogstatsd));
     }
 
     while (true) {

@@ -54,39 +54,6 @@ class ENearConnector {
     }  
 }
 
-export class NearIsUsedProof {
-    contract: Contract;
-    address: string;
-
-    constructor(nearAccount: Account, connectorContractAddress: string) {
-        this.address = connectorContractAddress;
-        this.contract = new Contract(
-            nearAccount,
-            connectorContractAddress,
-            {
-                changeMethods: [],
-                viewMethods: ['is_used_proof'],
-            }
-        );
-    }
-
-    async isUsedProof(proof: any): Promise<boolean> {
-        return await(this.contract as any).is_used_proof(proof, { parse: parseBool });
-    }  
-}
-
-function parseBool(data: Array<any>) {
-    // Try to deserialize first as borsh
-    if (data.length === 1) {
-        if (data[0] === 0)
-            return false;
-        else if (data[0] === 1)
-            return true;
-    }
-
-    return JSON.parse(Buffer.from(data).toString());
-}
-
 export function getConnector(nearAccount: Account, connectorType: ConnectorType): IConnector {
     const connectorContractAddress = getConnectorAccount(connectorType);
 

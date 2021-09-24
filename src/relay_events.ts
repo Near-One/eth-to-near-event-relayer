@@ -16,7 +16,7 @@ interface GaugeEvents {
     LAST_BLOCK_WITH_RELAYED: string;
 }
 
-export abstract class RelayEvents {
+export abstract class EventRelayer {
     processedEventsCounter: number = 0;
     skippedEventsCounter: number = 0;
     relayedEventsCounter: number = 0;
@@ -26,24 +26,45 @@ export abstract class RelayEvents {
     protected relayedConnectorEventsCounter: any;
     protected connectorType: ConnectorType;
     protected gaugeEvents: GaugeEvents;
+    protected address: string;
 
-    protected constructor(account: Account, ethersProvider: providers.JsonRpcProvider, dogstatsd: StatsD, connectorType: ConnectorType, gaugeEvents: GaugeEvents) {
+    protected constructor(account: Account, ethersProvider: providers.JsonRpcProvider, dogstatsd: StatsD,
+                          connectorType: ConnectorType, gaugeEvents: GaugeEvents, address: string) {
         this.relayerNearAccount = account;
         this.ethersProvider = ethersProvider;
         this.dogstatsd = dogstatsd;
         this.connectorType = connectorType;
         this.gaugeEvents = gaugeEvents;
+        this.address = address;
 
         this.dogstatsd.gauge(gaugeEvents.NUM_PROCESSED, this.processedEventsCounter);
         this.dogstatsd.gauge(gaugeEvents.NUM_SKIPPED, this.skippedEventsCounter);
         this.dogstatsd.gauge(gaugeEvents.NUM_RELAYED, this.relayedEventsCounter);
     }
 
-    abstract processEvent(blockFrom: number, blockTo: number): Promise<void>;
+    async processEvent(blockFrom: number, blockTo: number): Promise<void> {
+        const depositedEvents = await getDepositedEventsForBlocks(this.ethersProvider, this.address,
+            this.connectorType, blockFrom, blockTo
+        );
 
-    protected async process(eventLog: Event, logMsg: string): Promise<void> {
-        console.log(logMsg);
+        if (depositedEvents.length == 0) {
+            return;
+        }
 
+        console.log(`Relaying ${this.getTypeStr()} events. Relay only Aurora events: ${relayerConfig.relayOnlyAuroraEvents}`);
+        console.log(`Found ${depositedEvents.length} ${this.getTypeStr()} deposited events in blocks [${blockFrom}; ${blockTo}]`);
+
+        for (const eventLog of depositedEvents) {
+            const isAuroraEvent = this.isEventForAurora(eventLog);
+
+            if (! this.isSkippedEvent(eventLog, isAuroraEvent)) {
+                console.log(this.processingLogMsg(isAuroraEvent));
+                await this.process(eventLog);
+            }
+        }
+    }
+
+    protected async process(eventLog: Event): Promise<void> {
         const proof = await findProofForEvent(this.ethersProvider, this.connectorType, eventLog);
         const isUsedProof = await nearIsUsedProof(this.relayerNearAccount, this.connectorType, proof);
 
@@ -64,116 +85,92 @@ export abstract class RelayEvents {
         this.dogstatsd.gauge(this.gaugeEvents.NUM_RELAYED, this.relayedEventsCounter);
         this.dogstatsd.gauge(this.gaugeEvents.LAST_BLOCK_WITH_RELAYED, eventLog.blockNumber);
     }
+
+    protected isEventForAurora(eventLog: Event) {
+        return isEventForAurora(relayerConfig.auroraAccount, eventLog);
+    }
+
+    abstract getTypeStr(): string;
+    abstract processingLogMsg(isAuroraEvent: boolean): string;
+    abstract isSkippedEvent(eventLog: Event, isAuroraEvent: boolean): boolean;
 }
 
-export class RelayEthEvents extends RelayEvents {
+export class EthEventRelayer extends EventRelayer {
     constructor(account: Account, ethersProvider: providers.JsonRpcProvider, httpPrometheus: HttpPrometheus, dogstatsd: StatsD) {
         super(account, ethersProvider, dogstatsd, ConnectorType.ethCustodian, {
             NUM_PROCESSED: metrics.GAUGE_ETH_NUM_PROCESSED_EVENTS,
             NUM_SKIPPED: metrics.GAUGE_ETH_NUM_SKIPPED_EVENTS,
             NUM_RELAYED: metrics.GAUGE_ETH_NUM_RELAYED_EVENTS,
             LAST_BLOCK_WITH_RELAYED: metrics.GAUGE_ETH_LAST_BLOCK_WITH_RELAYED_EVENT
-        });
+        }, relayerConfig.ethCustodianAddress);
         this.relayedConnectorEventsCounter = httpPrometheus.counter('num_relayed_eth_connector_events', 'Number of relayed ETH connector events');
     }
 
-    async processEvent(blockFrom: number, blockTo: number): Promise<void> {
-        const ethCustodianDepositedEvents = await getDepositedEventsForBlocks(this.ethersProvider, relayerConfig.ethCustodianAddress,
-            this.connectorType, blockFrom, blockTo
-        );
+    getTypeStr(): string {
+        return "EthCustodian";
+    }
 
-        if (ethCustodianDepositedEvents.length == 0) {
-            return;
-        }
+    processingLogMsg(isAuroraEvent: boolean): string {
+        return isAuroraEvent ? '> Processing ETH->AuroraETH deposit event...'
+            : '> Processing ETH->NEP-141 deposit event...';
+    }
 
-        console.log(`Relaying EthCustodian events. Relay only Aurora events: ${relayerConfig.relayOnlyAuroraEvents}`);
-        console.log(`Found ${ethCustodianDepositedEvents.length} EthCustodian deposited events in blocks [${blockFrom}; ${blockTo}]`);
-
-        for (const eventLog of ethCustodianDepositedEvents) {
-            const isAuroraEvent = isEventForAurora(relayerConfig.auroraAccount, eventLog);
-            const logMsg = isAuroraEvent ? '> Processing ETH->AuroraETH deposit event...'
-                : '> Processing ETH->NEP-141 deposit event...';
-
-            if (relayerConfig.relayOnlyAuroraEvents && !isAuroraEvent) {
-                continue;
-            } else {
-                await this.process(eventLog, logMsg);
-            }
-        }
+    isSkippedEvent(eventLog: Event, isAuroraEvent: boolean): boolean {
+        return relayerConfig.relayOnlyAuroraEvents && !isAuroraEvent;
     }
 }
 
-export class RelayERC20Events extends RelayEvents {
+export class ERC20EventRelayer extends EventRelayer {
     constructor(account: Account, ethersProvider: providers.JsonRpcProvider, httpPrometheus: HttpPrometheus, dogstatsd: StatsD) {
         super(account, ethersProvider, dogstatsd, ConnectorType.erc20Locker, {
             NUM_PROCESSED: metrics.GAUGE_ERC20_NUM_PROCESSED_EVENTS,
             NUM_SKIPPED: metrics.GAUGE_ERC20_NUM_SKIPPED_EVENTS,
             NUM_RELAYED: metrics.GAUGE_ERC20_NUM_RELAYED_EVENTS,
             LAST_BLOCK_WITH_RELAYED: metrics.GAUGE_ERC20_LAST_BLOCK_WITH_RELAYED_EVENT
-        });
+        }, relayerConfig.erc20LockerAddress);
         this.relayedConnectorEventsCounter = httpPrometheus.counter('num_relayed_erc20_connector_events', 'Number of relayed ERC20 connector events');
     }
 
-    async processEvent(blockFrom: number, blockTo: number): Promise<void> {
-        const erc20LockerDepositedEvents = await getDepositedEventsForBlocks(this.ethersProvider, relayerConfig.erc20LockerAddress,
-            this.connectorType, blockFrom, blockTo
-        );
+    getTypeStr(): string {
+        return "ERC20Locker";
+    }
 
-        if (erc20LockerDepositedEvents.length == 0) {
-            return;
-        }
+    processingLogMsg(isAuroraEvent: boolean): string {
+        return isAuroraEvent ? '> Processing ERC20->AuroraERC20 deposit event...'
+            : '> Processing ERC20->NEP-141 deposit event...';
+    }
 
-        console.log(`Relaying ERC20Locker events. Relay only Aurora events: ${relayerConfig.relayOnlyAuroraEvents}`);
-        console.log(`Found ${erc20LockerDepositedEvents.length} ERC20Locker locked events in blocks [${blockFrom}; ${blockTo}]`);
-
-        for (const eventLog of erc20LockerDepositedEvents) {
-            const isAuroraEvent = isEventForAurora(relayerConfig.auroraAccount, eventLog);
-            const logMsg = isAuroraEvent ? '> Processing ERC20->AuroraERC20 deposit event...'
-                : '> Processing ERC20->NEP-141 deposit event...';
-
-            if (relayerConfig.relayOnlyAuroraEvents && !isAuroraEvent) {
-                continue;
-            } else {
-                await this.process(eventLog, logMsg);
-            }
-        }
+    isSkippedEvent(eventLog: Event, isAuroraEvent: boolean): boolean {
+        return relayerConfig.relayOnlyAuroraEvents && !isAuroraEvent;
     }
 }
 
-export class RelayENearEvents extends RelayEvents {
+export class ENearEventRelayer extends EventRelayer {
     constructor(account: Account, ethersProvider: providers.JsonRpcProvider, httpPrometheus: HttpPrometheus, dogstatsd: StatsD) {
         super(account, ethersProvider, dogstatsd, ConnectorType.eNear, {
             NUM_PROCESSED: metrics.GAUGE_ENEAR_NUM_PROCESSED_EVENTS,
             NUM_SKIPPED: metrics.GAUGE_ENEAR_NUM_SKIPPED_EVENTS,
             NUM_RELAYED: metrics.GAUGE_ENEAR_NUM_RELAYED_EVENTS,
             LAST_BLOCK_WITH_RELAYED: metrics.GAUGE_ENEAR_LAST_BLOCK_WITH_RELAYED_EVENT
-        });
+        }, relayerConfig.eNearAddress);
 
         this.relayedConnectorEventsCounter = httpPrometheus.counter('num_relayed_eNear_connector_events', 'Number of relayed eNEAR connector events');
     }
 
-    async processEvent(blockFrom: number, blockTo: number): Promise<void> {
-        const eNearDepositedEvents = await getDepositedEventsForBlocks(this.ethersProvider, relayerConfig.eNearAddress,
-            this.connectorType, blockFrom, blockTo
-        );
+    getTypeStr(): string {
+        return "eNear";
+    }
 
-        if (eNearDepositedEvents.length == 0) {
-            return;
-        }
+    processingLogMsg(isAuroraEvent: boolean): string {
+        return '> Processing eNEAR->NEP-141 deposit event...';
+    }
 
-        console.log(`Relaying eNear events.`);
-        console.log(`Found ${eNearDepositedEvents.length} eNear locked events in blocks [${blockFrom}; ${blockTo}]`);
+    isSkippedEvent(eventLog: Event, isAuroraEvent: boolean): boolean {
+        const isAuroraTransferSupported = false; // not available yet
+        return isAuroraTransferSupported && relayerConfig.relayOnlyAuroraEvents && !isAuroraEvent;
+    }
 
-        for (const eventLog of eNearDepositedEvents) {
-            const isAuroraTransferSupported = false; // not available yet
-            const isAuroraEvent = false;
-            const logMsg = '> Processing eNEAR->NEP-141 deposit event...';
-
-            if (isAuroraTransferSupported && relayerConfig.relayOnlyAuroraEvents && !isAuroraEvent) {
-                continue;
-            } else {
-                await this.process(eventLog, logMsg);
-            }
-        }
+    isEventForAurora(eventLog: Event) {
+        return false;
     }
 }
