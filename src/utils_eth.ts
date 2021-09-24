@@ -1,7 +1,9 @@
-require('dotenv').config();
+import dotenv = require('dotenv');
 
-import { providers, Event, Contract, EventFilter, ContractInterface } from 'ethers';
-import { ConnectorType } from './types';
+dotenv.config();
+
+import {Contract, ContractInterface, Event, EventFilter, providers} from 'ethers';
+import {ConnectorType} from './types';
 import ethCustodianAbi from './json/eth-custodian-abi.json';
 import erc20LockerAbi from './json/erc20-locker-abi.json';
 import eNearAbi from './json/eth-near-abi.json';
@@ -41,13 +43,10 @@ export async function getDepositedEventsForBlocks(provider: providers.JsonRpcPro
     const contractABI = getConnectorABI(connectorType);
     const contract = new Contract(contractAddress, contractABI).connect(provider);
     const eventFilter = getEventFilter(contract, connectorType);
-
-    const depositedEvents = await contract.queryFilter(eventFilter, blockNumberFrom, blockNumberTo);
-
-    return depositedEvents;
+    return await contract.queryFilter(eventFilter, blockNumberFrom, blockNumberTo);
 }
 
-export function isEventForAurora(nearAuroraAccount: string, eventLog: Event) {
+export function isEventForAurora(nearAuroraAccount: string, eventLog: Event): boolean {
     const recipientMessage = eventLog.args[1];
     const recipientArgs = recipientMessage.split(':');
 

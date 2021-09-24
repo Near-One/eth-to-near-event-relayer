@@ -4,8 +4,8 @@ import { Account } from 'near-api-js';
 export const borshSchema = {
   bool: {
     kind: 'function',
-    ser: (b: any) => Buffer.from(Web3.utils.hexToBytes(b ? '0x01' : '0x00')),
-    deser: (z: any) => readerToHex(1)(z) === '0x01'
+    ser: (b: any): Buffer => Buffer.from(Web3.utils.hexToBytes(b ? '0x01' : '0x00')),
+    deser: (z: any): boolean => readerToHex(1)(z) === '0x01'
   },
   dagMerkleRootInput: {
     kind: 'struct',
@@ -77,8 +77,7 @@ export class EthOnNearClientContract extends BorshContract {
     })
   }
 
-  async lastBlockNumber(): Promise<Number> {
-    const self: any = this;
-    return self.last_block_number();
+  async lastBlockNumber(): Promise<number> {
+    return (this as any).last_block_number();
   }
 }

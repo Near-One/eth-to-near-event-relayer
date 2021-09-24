@@ -10,7 +10,6 @@
     "bn": "^1.0.5",
     "dotenv": "^8.2.0",
     "eth-connector": "https://github.com/aurora-is-near/eth-connector",
-    "ethers": "^5.4.0",
     "eth-object": "https://github.com/near/eth-object#383b6ea68c7050bea4cab6950c1d5a7fa553e72b",
     "eth-util-lite": "near/eth-util-lite#master",
     "ethers": "^5.4.0",
@@ -21,8 +20,14 @@
     "promisfy": "^1.2.0",
     "rainbow-bridge-utils": "1.0.0",
     "rainbow-token-connector": "https://github.com/aurora-is-near/rainbow-token-connector",
-    "@ethereumjs/block": "^3.4.0",
-    "yargs": "^17.0.1",
-    "web3": "^1.4.0"
+    "web3": "^1.4.0",
+    "@types/yargs": "^17.0.1",
+    "yargs": "^17.0.1"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^4.31.2",
+    "@typescript-eslint/parser": "^4.31.2",
+    "eslint": "^7.32.0",
+    "typescript": "^4.4.3"
   }
 }

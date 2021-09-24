@@ -2,7 +2,7 @@ import { findProofForEvent } from './eth_generate_proof';
 import { getDepositedEventsForBlocks, isEventForAurora } from './utils_eth';
 import { ConnectorType } from './types';
 import { StatsD } from 'hot-shots';
-import { metrics } from './metrics';
+import * as metrics from './metrics';
 import { HttpPrometheus } from '../utils/http-prometheus';
 import { depositProofToNear, nearIsUsedProof } from './utils_near';
 import { Account } from 'near-api-js';
@@ -17,9 +17,9 @@ interface GaugeEvents {
 }
 
 export abstract class EventRelayer {
-    processedEventsCounter: number = 0;
-    skippedEventsCounter: number = 0;
-    relayedEventsCounter: number = 0;
+    processedEventsCounter = 0;
+    skippedEventsCounter = 0;
+    relayedEventsCounter = 0;
     protected relayerNearAccount: Account;
     protected ethersProvider: providers.JsonRpcProvider;
     protected dogstatsd: StatsD;
@@ -57,7 +57,7 @@ export abstract class EventRelayer {
         for (const eventLog of depositedEvents) {
             const isAuroraEvent = this.isEventForAurora(eventLog);
 
-            if (! this.isSkippedEvent(eventLog, isAuroraEvent)) {
+            if (! this.isSkipEvent(isAuroraEvent)) {
                 console.log(this.processingLogMsg(isAuroraEvent));
                 await this.process(eventLog);
             }
@@ -86,13 +86,16 @@ export abstract class EventRelayer {
         this.dogstatsd.gauge(this.gaugeEvents.LAST_BLOCK_WITH_RELAYED, eventLog.blockNumber);
     }
 
-    protected isEventForAurora(eventLog: Event) {
+    protected isEventForAurora(eventLog: Event): boolean {
         return isEventForAurora(relayerConfig.auroraAccount, eventLog);
+    }
+
+    protected isSkipEvent(isAuroraEvent: boolean): boolean {
+        return relayerConfig.relayOnlyAuroraEvents && !isAuroraEvent;
     }
 
     abstract getTypeStr(): string;
     abstract processingLogMsg(isAuroraEvent: boolean): string;
-    abstract isSkippedEvent(eventLog: Event, isAuroraEvent: boolean): boolean;
 }
 
 export class EthEventRelayer extends EventRelayer {
@@ -114,10 +117,6 @@ export class EthEventRelayer extends EventRelayer {
         return isAuroraEvent ? '> Processing ETH->AuroraETH deposit event...'
             : '> Processing ETH->NEP-141 deposit event...';
     }
-
-    isSkippedEvent(eventLog: Event, isAuroraEvent: boolean): boolean {
-        return relayerConfig.relayOnlyAuroraEvents && !isAuroraEvent;
-    }
 }
 
 export class ERC20EventRelayer extends EventRelayer {
@@ -138,10 +137,6 @@ export class ERC20EventRelayer extends EventRelayer {
     processingLogMsg(isAuroraEvent: boolean): string {
         return isAuroraEvent ? '> Processing ERC20->AuroraERC20 deposit event...'
             : '> Processing ERC20->NEP-141 deposit event...';
-    }
-
-    isSkippedEvent(eventLog: Event, isAuroraEvent: boolean): boolean {
-        return relayerConfig.relayOnlyAuroraEvents && !isAuroraEvent;
     }
 }
 
@@ -165,12 +160,12 @@ export class ENearEventRelayer extends EventRelayer {
         return '> Processing eNEAR->NEP-141 deposit event...';
     }
 
-    isSkippedEvent(eventLog: Event, isAuroraEvent: boolean): boolean {
+    isSkipEvent(isAuroraEvent: boolean): boolean {
         const isAuroraTransferSupported = false; // not available yet
         return isAuroraTransferSupported && relayerConfig.relayOnlyAuroraEvents && !isAuroraEvent;
     }
 
-    isEventForAurora(eventLog: Event) {
+    isEventForAurora(eventLog: Event): boolean {
         return false;
     }
 }

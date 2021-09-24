@@ -5,7 +5,7 @@ import * as connectors from './connectors';
 
 const NEAR_YOCTO_TO_NANO = new BN(10).pow(new BN(15))
 
-export async function depositProofToNear(nearAccount: Account, connectorType: ConnectorType, proof) {
+export async function depositProofToNear(nearAccount: Account, connectorType: ConnectorType, proof: Uint8Array): Promise<void> {
     const connector = connectors.getConnector(nearAccount, connectorType);
 
     const gas_limit = new BN('300' + '0'.repeat(12)); // Gas limit
@@ -20,7 +20,7 @@ export async function depositProofToNear(nearAccount: Account, connectorType: Co
     }
 }
 
-export async function nearIsUsedProof(nearAccount: Account, connectorType: ConnectorType, proof: ArrayBuffer | SharedArrayBuffer) {
+export async function nearIsUsedProof(nearAccount: Account, connectorType: ConnectorType, proof: ArrayBuffer | SharedArrayBuffer): Promise<boolean> {
     const connectorContractAddress = connectors.getConnectorAccount(connectorType);
     const connector = new ProofUsageChecker(nearAccount, connectorContractAddress);
     return await connector.isUsedProof(Buffer.from(proof));

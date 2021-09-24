@@ -3,8 +3,6 @@ import { encode } from 'eth-util-lite';
 import { promisfy } from 'promisfy';
 import { Header, Proof, Receipt, Log } from 'eth-object';
 import * as ethers from 'ethers';
-import blockFromRpc from '@ethereumjs/block/dist/from-rpc'
-import Common from '@ethereumjs/common'
 import * as utils from 'ethereumjs-util';
 import { serialize as serializeBorsh } from 'near-api-js/lib/utils/serialize';
 import Path = require('path')
@@ -72,7 +70,7 @@ export async function findProofForEvent(ethersProvider: ethers.providers.JsonRpc
     console.log(`Generating the proof for TX with hash: ${receipt.transactionHash} at height ${receipt.blockNumber}`);
 
     /// TODO: Fix this hack
-    let web3 = new Web3(ethersProvider.connection.url);
+    const web3 = new Web3(ethersProvider.connection.url);
     const block = await web3.eth.getBlock(receipt.blockNumber);
     const tree = await buildTree(ethersProvider, block);
 
@@ -145,28 +143,6 @@ async function buildTree(ethersProvider: ethers.providers.JsonRpcProvider, block
     }
 
     return tree;
-}
-
-/// TODO: This function was copied from rainbow-bridge. Move it to rainbow-bridge-client and use it from there.
-/// bridgeId matches nearNetworkId. It is one of two strings [testnet / mainnet]
-function web3BlockToRlp(blockData: any, bridgeId: string) {
-    let chain: string;
-    if (bridgeId === "testnet") {
-        chain = "ropsten";
-    } else {
-        chain = "mainnet";
-    }
-    const common = new Common ({ chain : chain });
-
-    /// baseFeePerGas was introduced after london hard fork.
-    /// TODO: Use better way to detect current hard fork.
-    if (blockData.baseFeePerGas !== undefined) {
-        common.setHardfork("london")
-        common.setEIPs([1559])
-    }
-
-    const block = blockFromRpc(blockData, [], { common });
-    return block.header.serialize();
 }
 
 async function extractProof(ethersProvider: ethers.providers.JsonRpcProvider, block: BlockTransactionString, tree, transactionIndex) {

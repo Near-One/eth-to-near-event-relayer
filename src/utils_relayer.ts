@@ -2,7 +2,7 @@ import * as fs from 'fs';
 
 const LAST_PROCESSED_BLOCK_SESSION_FILE_NAME = '.event_relayer_session';
 
-export function isLastSessionExists() {
+export function isLastSessionExists(): boolean {
     try {
         if (fs.existsSync(LAST_PROCESSED_BLOCK_SESSION_FILE_NAME)) {
             return true;
@@ -12,7 +12,7 @@ export function isLastSessionExists() {
     }
 }
 
-export function getLastSessionBlockNumber() {
+export function getLastSessionBlockNumber(): number {
     if (!isLastSessionExists()) {
         console.error(`Session file does not exist!`);
         return -1;
@@ -27,7 +27,7 @@ export function getLastSessionBlockNumber() {
     }
 }
 
-export function recordSession(blockNumber: number) {
+export function recordSession(blockNumber: number): void {
     try {
         fs.writeFileSync(LAST_PROCESSED_BLOCK_SESSION_FILE_NAME, blockNumber.toString());
     } catch (err) {

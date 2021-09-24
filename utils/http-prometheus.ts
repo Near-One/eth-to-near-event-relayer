@@ -1,28 +1,26 @@
 import * as http from 'http'
+import * as promClient from 'prom-client'
+promClient.collectDefaultMetrics({
+  register: new promClient.Registry()
+})
 
 export class HttpPrometheus {
   port: number
   metricsPrefix: string;
-  promClient: any;
   server: http.Server;
 
-  constructor (port: number, metricsPrefix:string = 'near_bridge_') {
-    const self = this
-    self.metricsPrefix = metricsPrefix
-    self.promClient = require('prom-client')
-    self.promClient.collectDefaultMetrics({
-      register: new self.promClient.Registry()
-    })
+  constructor (port: number, metricsPrefix = 'near_bridge_') {
+    this.metricsPrefix = metricsPrefix
 
     if (port < 1) {
       return;
     }
 
-    self.port = port
+    this.port = port
     // create a server object:
-    self.server = http.createServer(async function (req, res) {
+    this.server = http.createServer(async function (req, res) {
       if (req.url === '/metrics') {
-        const metrics = await self.promClient.register.metrics()
+        const metrics = promClient.register.metrics()
         res.write(metrics) // write a response to the client
         res.end() // end the response
         return
@@ -31,28 +29,26 @@ export class HttpPrometheus {
       res.end()
     })
 
-    self.server.listen(self.port)
+    this.server.listen(this.port)
   }
 
-  gauge (name: string, help: string, labels = {}) {
-    const self = this
-    const gauge = new self.promClient.Gauge({
-      name: self.metricsPrefix + name,
+  gauge (name: string, help: string, labels = {}): promClient.Gauge<string> {
+    const gauge = new promClient.Gauge({
+      name: this.metricsPrefix + name,
       help,
       labelNames: Object.keys(labels)
     })
-    self.promClient.register.registerMetric(gauge)
-    return gauge
+    promClient.register.registerMetric(gauge);
+    return gauge;
   }
 
-  counter (name: string, help: string, labels = {}) {
-    const self = this
-    const counter = new self.promClient.Counter({
-      name: self.metricsPrefix + name,
+  counter (name: string, help: string, labels = {}): promClient.Counter<string> {
+    const counter = new promClient.Counter({
+      name: this.metricsPrefix + name,
       help,
       labelNames: Object.keys(labels)
     })
-    self.promClient.register.registerMetric(counter)
+    promClient.register.registerMetric(counter)
     return counter
   }
 }

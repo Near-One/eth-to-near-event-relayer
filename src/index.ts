@@ -1,17 +1,20 @@
-require('dotenv').config();
-
-import { metrics } from './metrics';
-import { isLastSessionExists, getLastSessionBlockNumber, recordSession } from './utils_relayer';
-import { balanceNearYoctoToNano } from './utils_near';
-import { HttpPrometheus } from '../utils/http-prometheus';
-import { EthOnNearClientContract } from './eth-on-near-client';
-import { EventRelayer, EthEventRelayer, ERC20EventRelayer, ENearEventRelayer } from "./relay_events"
+import * as dotenv from 'dotenv';
+import * as metrics from './metrics';
+import {getLastSessionBlockNumber, isLastSessionExists, recordSession} from './utils_relayer';
+import {balanceNearYoctoToNano} from './utils_near';
+import {HttpPrometheus} from '../utils/http-prometheus';
+import {EthOnNearClientContract} from './eth-on-near-client';
+import {ENearEventRelayer, ERC20EventRelayer, EthEventRelayer, EventRelayer} from "./relay_events"
 import * as ethers from 'ethers';
-import { StatsD } from 'hot-shots';
-const dogstatsd = new StatsD();
-
+import {StatsD} from 'hot-shots';
 import relayerConfig from './json/relayer-config.json';
 import * as nearAPI from 'near-api-js';
+import yargs from 'yargs';
+
+dotenv.config();
+
+const dogstatsd = new StatsD();
+
 const keyStore = new nearAPI.keyStores.UnencryptedFileSystemKeyStore(process.env.NEAR_KEY_STORE_PATH);
 
 function sleep(time_ms: number) {
@@ -24,8 +27,7 @@ async function getEthOnNearLastBlockNumber(nearAccount: nearAPI.Account, ethOnNe
         ethOnNearClientAccount,
     );
 
-    const lastBlockNumber = Number(await ethOnNearClient.lastBlockNumber());
-    return lastBlockNumber;
+    return Number(await ethOnNearClient.lastBlockNumber());
 }
 
 async function startRelayerFromBlockNumber(ethersProvider: ethers.providers.JsonRpcProvider, nearJsonRpc: string, nearNetwork: string, blockNumber: number) {
@@ -49,7 +51,7 @@ async function startRelayerFromBlockNumber(ethersProvider: ethers.providers.Json
     const relayerCurrentBlockNumberGauge = httpPrometheus.gauge('event_relayer_current_block_number', 'Current EthToNearEventRelayer block number');
 
     let currentBlockNumber = blockNumber > 0 ? blockNumber - 1 : 0;
-    let relayEvents: Array<EventRelayer> = [];
+    const relayEvents: Array<EventRelayer> = [];
 
     if (relayerConfig.relayEthConnectorEvents) {
         relayEvents.push(new EthEventRelayer(relayerNearAccount, ethersProvider, httpPrometheus, dogstatsd));
@@ -63,7 +65,7 @@ async function startRelayerFromBlockNumber(ethersProvider: ethers.providers.Json
         relayEvents.push(new ENearEventRelayer(relayerNearAccount, ethersProvider, httpPrometheus, dogstatsd));
     }
 
-    while (true) {
+    for (;;) {
         recordSession(currentBlockNumber);
 
         const currentRelayerNearBalance = await relayerNearAccount.getAccountBalance();
@@ -85,7 +87,7 @@ async function startRelayerFromBlockNumber(ethersProvider: ethers.providers.Json
 
             console.log(`Processing blocks: [${blockFrom}; ${blockTo}]`);
 
-            for (let relay of relayEvents){
+            for (const relay of relayEvents){
                 await relay.processEvent(blockFrom, blockTo);
             }
 
@@ -108,14 +110,14 @@ async function startRelayerFromBlockNumber(ethersProvider: ethers.providers.Json
 }
 
 async function main() {
-    const argv = require('yargs')(process.argv.slice(2))
+    const argv = yargs(process.argv.slice(2))
         .example('$0 --start-from-block 1234', 'Start the event-relayer from the given block number')
         .example('$0 --restore-last-session', 'Start the event-relayer restoring the latest session')
         .boolean(['restore-last-session'])
         .describe('start-from-block', 'The block number from which to start relaying')
         .help('h')
         .alias('h', 'help')
-        .argv;
+        .parseSync();
 
     let blockNumberFrom = 0;
     if (argv.restoreLastSession) {
