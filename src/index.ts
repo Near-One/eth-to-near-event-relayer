@@ -4,7 +4,7 @@ import {getLastSessionBlockNumber, isLastSessionExists, recordSession} from './u
 import {balanceNearYoctoToNano} from './utils_near';
 import {HttpPrometheus} from '../utils/http-prometheus';
 import {EthOnNearClientContract} from './eth-on-near-client';
-import {ENearEventRelayer, ERC20EventRelayer, EthEventRelayer, EventRelayer} from "./relay_events"
+import {ENearEventRelayer, ERC20EventRelayer, EthEventRelayer, EventRelayer} from "./event_relayer"
 import * as ethers from 'ethers';
 import {StatsD} from 'hot-shots';
 import relayerConfig from './json/relayer-config.json';

@@ -109,11 +109,11 @@ export class EthEventRelayer extends EventRelayer {
         this.relayedConnectorEventsCounter = httpPrometheus.counter('num_relayed_eth_connector_events', 'Number of relayed ETH connector events');
     }
 
-    getTypeStr(): string {
+    override getTypeStr(): string {
         return "EthCustodian";
     }
 
-    processingLogMsg(isAuroraEvent: boolean): string {
+    override processingLogMsg(isAuroraEvent: boolean): string {
         return isAuroraEvent ? '> Processing ETH->AuroraETH deposit event...'
             : '> Processing ETH->NEP-141 deposit event...';
     }
@@ -130,11 +130,11 @@ export class ERC20EventRelayer extends EventRelayer {
         this.relayedConnectorEventsCounter = httpPrometheus.counter('num_relayed_erc20_connector_events', 'Number of relayed ERC20 connector events');
     }
 
-    getTypeStr(): string {
+    override getTypeStr(): string {
         return "ERC20Locker";
     }
 
-    processingLogMsg(isAuroraEvent: boolean): string {
+    override processingLogMsg(isAuroraEvent: boolean): string {
         return isAuroraEvent ? '> Processing ERC20->AuroraERC20 deposit event...'
             : '> Processing ERC20->NEP-141 deposit event...';
     }
@@ -152,20 +152,20 @@ export class ENearEventRelayer extends EventRelayer {
         this.relayedConnectorEventsCounter = httpPrometheus.counter('num_relayed_eNear_connector_events', 'Number of relayed eNEAR connector events');
     }
 
-    getTypeStr(): string {
+    override getTypeStr(): string {
         return "eNear";
     }
 
-    processingLogMsg(isAuroraEvent: boolean): string {
+    override processingLogMsg(): string {
         return '> Processing eNEAR->NEP-141 deposit event...';
     }
 
-    isSkipEvent(isAuroraEvent: boolean): boolean {
+    override isSkipEvent(isAuroraEvent: boolean): boolean {
         const isAuroraTransferSupported = false; // not available yet
         return isAuroraTransferSupported && relayerConfig.relayOnlyAuroraEvents && !isAuroraEvent;
     }
 
-    isEventForAurora(eventLog: Event): boolean {
+    override isEventForAurora(): boolean {
         return false;
     }
 }
