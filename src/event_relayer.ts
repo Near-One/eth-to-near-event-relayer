@@ -27,6 +27,7 @@ export abstract class EventRelayer {
     protected connectorType: ConnectorType;
     protected gaugeEvents: GaugeEvents;
     protected address: string;
+    protected isShouldClose = false;
 
     protected constructor(account: Account, ethersProvider: providers.JsonRpcProvider, dogstatsd: StatsD,
                           connectorType: ConnectorType, gaugeEvents: GaugeEvents, address: string) {
@@ -42,6 +43,10 @@ export abstract class EventRelayer {
         this.dogstatsd.gauge(gaugeEvents.NUM_RELAYED, this.relayedEventsCounter);
     }
 
+    close(): void {
+        this.isShouldClose = true;
+    }
+
     async processEvent(blockFrom: number, blockTo: number): Promise<void> {
         const depositedEvents = await getDepositedEventsForBlocks(this.ethersProvider, this.address,
             this.connectorType, blockFrom, blockTo
@@ -55,6 +60,9 @@ export abstract class EventRelayer {
         console.log(`Found ${depositedEvents.length} ${this.getTypeStr()} deposited events in blocks [${blockFrom}; ${blockTo}]`);
 
         for (const eventLog of depositedEvents) {
+            if (this.isShouldClose)
+                return;
+
             const isAuroraEvent = this.isEventForAurora(eventLog);
 
             if (! this.isSkipEvent(isAuroraEvent)) {
