@@ -11,14 +11,12 @@ for each and submit it to NEAR.
 2. Set the appropriate `relayerNearAccount` address in `src/json/relayer-config.json` file.
 
 3. Add to the file your RPC endpoint (with or without API key):<br/>
-`$ echo "WEB3_RPC_ENDPOINT=YOUR_WEB3_RPC_ENDPOINT_HERE" >> .env` OR 
-`$ export WEB3_RPC_ENDPOINT=YOUR_WEB3_RPC_ENDPOINT_HERE` <br/>
+`$ echo "WEB3_RPC_ENDPOINT=YOUR_WEB3_RPC_ENDPOINT_HERE" >> .env`
 RPC access can be easily gained from [Alchemy](https://www.alchemyapi.io/).
 
 4. Add path to the Near credentials (e.g. this usually will be at `~/.near-credentials` on Linux <br/>
 and `/Users/<user>/.near-credentials` on MacOS: <br/>
-`$ echo "NEAR_KEY_STORE_PATH=PATH_TO_YOUR_NEAR_CREDENTIALS_HERE" >> .env` OR
-`$ export NEAR_KEY_STORE_PATH=PATH_TO_YOUR_NEAR_CREDENTIALS_HERE`
+`$ echo "NEAR_KEY_STORE_PATH=PATH_TO_YOUR_NEAR_CREDENTIALS_HERE" >> .env`
 
 ## Running
 

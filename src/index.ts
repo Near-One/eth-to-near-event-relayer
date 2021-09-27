@@ -13,13 +13,10 @@ import yargs from 'yargs';
 
 dotenv.config();
 
-function sleep(time_ms: number) {
-    return new Promise((empty) => setTimeout(empty, time_ms));
-}
-
 class RelayerApp {
     private relayEvents: Array<EventRelayer> = [];
     private isShouldClose = false;
+    private sleepPromiseResolve;
 
     async start() {
         const argv = yargs(process.argv.slice(2))
@@ -60,6 +57,9 @@ class RelayerApp {
 
     close() {
         this.isShouldClose = true;
+        if (typeof this.sleepPromiseResolve === 'function')
+            this.sleepPromiseResolve();
+
         for (const relay of this.relayEvents) {
             relay.close();
         }
@@ -154,7 +154,10 @@ class RelayerApp {
                     + `Required num confirmations: ${relayerConfig.numRequiredClientConfirmations}`);
             }
 
-            await sleep(relayerConfig.pollingIntervalMs);
+            await new Promise((resolve) => {
+                this.sleepPromiseResolve = resolve;
+                setTimeout(resolve, relayerConfig.pollingIntervalMs);
+            });
         }
     }
 }
@@ -168,6 +171,10 @@ relayerApp.start()
     process.exit(1);
 })
 
-process.on('SIGINT', function () {
+process.on('SIGTERM', () => {
+    relayerApp.close();
+});
+
+process.on('SIGINT', () => {
     relayerApp.close();
 });
