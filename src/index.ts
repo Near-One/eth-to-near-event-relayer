@@ -16,7 +16,7 @@ dotenv.config();
 class RelayerApp {
     private relayEvents: Array<EventRelayer> = [];
     private isShouldClose = false;
-    private sleepPromiseResolve;
+    private sleepPromiseResolve = null;
 
     async start() {
         const argv = yargs(process.argv.slice(2))
@@ -57,7 +57,7 @@ class RelayerApp {
 
     close() {
         this.isShouldClose = true;
-        if (typeof this.sleepPromiseResolve === 'function')
+        if (this.sleepPromiseResolve != null)
             this.sleepPromiseResolve();
 
         for (const relay of this.relayEvents) {
