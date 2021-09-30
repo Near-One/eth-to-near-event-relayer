@@ -3,7 +3,7 @@
 START_FROM_BLOCK=10147800
 
 default:
-	tsc
+	yarn run tsc
 	eslint . --ext .ts
 run:
 	mkdir -p build/proofs
