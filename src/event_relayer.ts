@@ -1,5 +1,5 @@
 import { findProofForEvent } from './eth_generate_proof';
-import { getDepositedEventsForBlocks, isEventForAurora } from './utils_eth';
+import { getDepositedEventsForBlocks, getLockEvent, isEventForAurora } from './utils_eth';
 import { ConnectorType } from './types';
 import { StatsD } from 'hot-shots';
 import * as metrics from './metrics';
@@ -8,6 +8,7 @@ import { depositProofToNear, nearIsUsedProof } from './utils_near';
 import { Account } from 'near-api-js';
 import { providers, Event } from 'ethers';
 import relayerConfig from './json/relayer-config.json';
+import { Incentivizer } from "./incentivizer";
 
 interface GaugeEvents {
     NUM_PROCESSED: string;
@@ -29,6 +30,7 @@ export abstract class EventRelayer {
     protected address: string;
     protected isShouldClose = false;
     protected isAuroraTransferSupported: boolean;
+    protected incentivizer: Incentivizer;
 
     protected constructor(account: Account, ethersProvider: providers.JsonRpcProvider, dogstatsd: StatsD,
                           connectorType: ConnectorType, gaugeEvents: GaugeEvents, address: string,
@@ -40,6 +42,7 @@ export abstract class EventRelayer {
         this.gaugeEvents = gaugeEvents;
         this.address = address;
         this.isAuroraTransferSupported = isAuroraTransferSupported;
+        this.incentivizer = new Incentivizer(account);
 
         this.dogstatsd.gauge(gaugeEvents.NUM_PROCESSED, this.processedEventsCounter);
         this.dogstatsd.gauge(gaugeEvents.NUM_SKIPPED, this.skippedEventsCounter);
@@ -95,6 +98,10 @@ export abstract class EventRelayer {
         this.relayedEventsCounter += 1;
         this.dogstatsd.gauge(this.gaugeEvents.NUM_RELAYED, this.relayedEventsCounter);
         this.dogstatsd.gauge(this.gaugeEvents.LAST_BLOCK_WITH_RELAYED, eventLog.blockNumber);
+
+        const lockEvent = getLockEvent(eventLog);
+        if (lockEvent != null)
+            await this.incentivizer.incentivize(lockEvent);
     }
 
     protected isSkipEvent(isAuroraEvent: boolean): boolean {
