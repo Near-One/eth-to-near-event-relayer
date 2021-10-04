@@ -1,7 +1,9 @@
 import {Account, Contract} from "near-api-js";
 import incentivizationConfig from './json/incentivization-config.json';
 import {LockEvent} from './utils_eth';
+import Binance from 'node-binance-api';
 import BN from "bn.js";
+import {parseTokenAmount} from "./utils_near";
 
 class IncentivizationContract {
     private contract: Contract;
@@ -49,6 +51,8 @@ class IncentivizationContract {
 }
 
 interface IRule {
+    ethTokenSymbol: string,
+    incentivizationTokenSymbol: string,
     ethToken: string
     bridgedToken: string,
     incentivizationToken: string,
@@ -66,17 +70,45 @@ class IncentivizationRule {
     }
 }
 
+export interface IPriceSource {
+    getPrice(pair: string): Promise<number>;
+}
+
+export class BinancePriceSource implements IPriceSource{
+    private binance = new Binance();
+    async getPrice(pair: string): Promise<number>{
+        return Number((await this.binance.prices(pair))[pair]);
+    }
+}
 
 export class Incentivizer {
     private rules = new Map<string, IncentivizationRule>();
     private nearAccount: Account;
+    private priceSource: IPriceSource;
 
-    constructor(nearAccount: Account) {
+    constructor(nearAccount: Account, priceSource: IPriceSource = new BinancePriceSource()) {
         this.nearAccount = nearAccount;
         for (const configRule of incentivizationConfig.rules) {
             const incentivizationRule = new IncentivizationRule(configRule, nearAccount);
             this.rules.set(configRule.ethToken, incentivizationRule);
         }
+
+        this.priceSource = priceSource;
+    }
+
+    async getAmountToTransfer(rule: {ethTokenSymbol: string,
+                                     incentivizationTokenSymbol: string,
+                                     incentivizationFactor: number}, eventAmount: number,
+                                     decimals: number): Promise<BN>{
+        const fiatSymbol = "USDT";
+        let pricePair = rule.ethTokenSymbol + fiatSymbol;
+        const bridgeTokenPrice = await this.priceSource.getPrice(pricePair);
+        pricePair = rule.incentivizationTokenSymbol + fiatSymbol;
+        const incentivizationTokenPrice = await this.priceSource.getPrice(pricePair);
+        const amountBridgeTokenFiat = eventAmount * bridgeTokenPrice;
+        const amountIncentivizationFiat = amountBridgeTokenFiat * rule.incentivizationFactor;
+        const amount = parseTokenAmount(String(amountIncentivizationFiat / incentivizationTokenPrice), decimals);
+        return new BN(amount);
     }
 
     async incentivize(lockEvent: LockEvent): Promise<void> {
@@ -87,10 +119,8 @@ export class Incentivizer {
         if (lockEvent.accountId == this.nearAccount.accountId)
             return;
 
-        // TODO: change the fixed amount size
-        const amountToTransfer = new BN("1");
-
         try {
+            const amountToTransfer = await this.getAmountToTransfer(incentivizationRule.rule, Number(lockEvent.amount), 18);
             const accountBalance = new BN(await incentivizationRule.contract.balanceOf(this.nearAccount.accountId));
 
             if (accountBalance < amountToTransfer) {

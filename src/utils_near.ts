@@ -62,3 +62,24 @@ class ProofUsageChecker {
         return await(this.contract as any).is_used_proof(proof, { parse: parseBool });
     }
 }
+
+
+function trimLeadingZeroes(value: string): string {
+    value = value.replace(/^0+/, '');
+    if (value === '') {
+        return '0';
+    }
+    return value;
+}
+
+export function parseTokenAmount(amt: string, decimals: number): string | null {
+    if (!amt) { return null; }
+    amt = amt.replace(/,/g, '').trim();
+    const split = amt.split('.');
+    const wholePart = split[0];
+    const fracPart = split[1] || '';
+    if (split.length > 2 || fracPart.length > decimals) {
+        throw new Error(`Cannot parse '${amt}' as NEAR amount`);
+    }
+    return trimLeadingZeroes(wholePart + fracPart.padEnd(decimals, '0'));
+}
