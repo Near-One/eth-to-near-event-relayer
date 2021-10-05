@@ -66,7 +66,7 @@ export abstract class EventRelayer {
             if (this.isShouldClose)
                 return;
 
-            const isAuroraEvent = this.isEventForAurora(eventLog);
+            const isAuroraEvent = isEventForAurora(relayerConfig.auroraAccount, eventLog);
 
             if (! this.isSkipEvent(isAuroraEvent)) {
                 console.log(this.processingLogMsg(isAuroraEvent));
@@ -95,10 +95,6 @@ export abstract class EventRelayer {
         this.relayedEventsCounter += 1;
         this.dogstatsd.gauge(this.gaugeEvents.NUM_RELAYED, this.relayedEventsCounter);
         this.dogstatsd.gauge(this.gaugeEvents.LAST_BLOCK_WITH_RELAYED, eventLog.blockNumber);
-    }
-
-    protected isEventForAurora(eventLog: Event): boolean {
-        return isEventForAurora(relayerConfig.auroraAccount, eventLog);
     }
 
     protected isSkipEvent(isAuroraEvent: boolean): boolean {
@@ -172,9 +168,5 @@ export class ENearEventRelayer extends EventRelayer {
 
     override processingLogMsg(): string {
         return '> Processing eNEAR->NEP-141 deposit event...';
-    }
-
-    override isEventForAurora(): boolean {
-        return false;
     }
 }
