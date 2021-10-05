@@ -28,15 +28,18 @@ export abstract class EventRelayer {
     protected gaugeEvents: GaugeEvents;
     protected address: string;
     protected isShouldClose = false;
+    protected isAuroraTransferSupported: boolean;
 
     protected constructor(account: Account, ethersProvider: providers.JsonRpcProvider, dogstatsd: StatsD,
-                          connectorType: ConnectorType, gaugeEvents: GaugeEvents, address: string) {
+                          connectorType: ConnectorType, gaugeEvents: GaugeEvents, address: string,
+                          isAuroraTransferSupported: boolean) {
         this.relayerNearAccount = account;
         this.ethersProvider = ethersProvider;
         this.dogstatsd = dogstatsd;
         this.connectorType = connectorType;
         this.gaugeEvents = gaugeEvents;
         this.address = address;
+        this.isAuroraTransferSupported = isAuroraTransferSupported;
 
         this.dogstatsd.gauge(gaugeEvents.NUM_PROCESSED, this.processedEventsCounter);
         this.dogstatsd.gauge(gaugeEvents.NUM_SKIPPED, this.skippedEventsCounter);
@@ -99,7 +102,7 @@ export abstract class EventRelayer {
     }
 
     protected isSkipEvent(isAuroraEvent: boolean): boolean {
-        return relayerConfig.relayOnlyAuroraEvents && !isAuroraEvent;
+        return this.isAuroraTransferSupported && relayerConfig.relayOnlyAuroraEvents && !isAuroraEvent;
     }
 
     abstract getTypeStr(): string;
@@ -113,7 +116,7 @@ export class EthEventRelayer extends EventRelayer {
             NUM_SKIPPED: metrics.GAUGE_ETH_NUM_SKIPPED_EVENTS,
             NUM_RELAYED: metrics.GAUGE_ETH_NUM_RELAYED_EVENTS,
             LAST_BLOCK_WITH_RELAYED: metrics.GAUGE_ETH_LAST_BLOCK_WITH_RELAYED_EVENT
-        }, relayerConfig.ethCustodianAddress);
+        }, relayerConfig.ethCustodianAddress, true);
         this.relayedConnectorEventsCounter = httpPrometheus.counter('num_relayed_eth_connector_events', 'Number of relayed ETH connector events');
     }
 
@@ -134,7 +137,7 @@ export class ERC20EventRelayer extends EventRelayer {
             NUM_SKIPPED: metrics.GAUGE_ERC20_NUM_SKIPPED_EVENTS,
             NUM_RELAYED: metrics.GAUGE_ERC20_NUM_RELAYED_EVENTS,
             LAST_BLOCK_WITH_RELAYED: metrics.GAUGE_ERC20_LAST_BLOCK_WITH_RELAYED_EVENT
-        }, relayerConfig.erc20LockerAddress);
+        }, relayerConfig.erc20LockerAddress, true);
         this.relayedConnectorEventsCounter = httpPrometheus.counter('num_relayed_erc20_connector_events', 'Number of relayed ERC20 connector events');
     }
 
@@ -155,7 +158,7 @@ export class ENearEventRelayer extends EventRelayer {
             NUM_SKIPPED: metrics.GAUGE_ENEAR_NUM_SKIPPED_EVENTS,
             NUM_RELAYED: metrics.GAUGE_ENEAR_NUM_RELAYED_EVENTS,
             LAST_BLOCK_WITH_RELAYED: metrics.GAUGE_ENEAR_LAST_BLOCK_WITH_RELAYED_EVENT
-        }, relayerConfig.eNearAddress);
+        }, relayerConfig.eNearAddress, false);
 
         this.relayedConnectorEventsCounter = httpPrometheus.counter('num_relayed_eNear_connector_events', 'Number of relayed eNEAR connector events');
     }
@@ -166,11 +169,6 @@ export class ENearEventRelayer extends EventRelayer {
 
     override processingLogMsg(): string {
         return '> Processing eNEAR->NEP-141 deposit event...';
-    }
-
-    override isSkipEvent(isAuroraEvent: boolean): boolean {
-        const isAuroraTransferSupported = false; // not available yet
-        return isAuroraTransferSupported && relayerConfig.relayOnlyAuroraEvents && !isAuroraEvent;
     }
 
     override isEventForAurora(): boolean {
