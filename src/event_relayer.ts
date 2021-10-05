@@ -102,7 +102,10 @@ export abstract class EventRelayer {
     }
 
     protected isSkipEvent(isAuroraEvent: boolean): boolean {
-        return this.isAuroraTransferSupported && relayerConfig.relayOnlyAuroraEvents && !isAuroraEvent;
+        if (isAuroraEvent && !this.isAuroraTransferSupported)
+            return true;
+
+        return !isAuroraEvent && relayerConfig.relayOnlyAuroraEvents;
     }
 
     abstract getTypeStr(): string;
