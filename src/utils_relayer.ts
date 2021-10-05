@@ -1,8 +1,8 @@
-const fs = require('fs');
+import * as fs from 'fs';
 
 const LAST_PROCESSED_BLOCK_SESSION_FILE_NAME = '.event_relayer_session';
 
-function isLastSessionExists() {
+export function isLastSessionExists(): boolean {
     try {
         if (fs.existsSync(LAST_PROCESSED_BLOCK_SESSION_FILE_NAME)) {
             return true;
@@ -12,7 +12,7 @@ function isLastSessionExists() {
     }
 }
 
-function getLastSessionBlockNumber() {
+export function getLastSessionBlockNumber(): number {
     if (!isLastSessionExists()) {
         console.error(`Session file does not exist!`);
         return -1;
@@ -20,22 +20,17 @@ function getLastSessionBlockNumber() {
 
     try {
         const last_block_str = fs.readFileSync(LAST_PROCESSED_BLOCK_SESSION_FILE_NAME, 'utf-8');
-        const last_block_number = Number(last_block_str);
-        return last_block_number;
+        return Number(last_block_str);
     } catch (err) {
         console.error(err);
         return -1;
     }
 }
 
-function recordSession(blockNumber) {
+export function recordSession(blockNumber: number): void {
     try {
         fs.writeFileSync(LAST_PROCESSED_BLOCK_SESSION_FILE_NAME, blockNumber.toString());
     } catch (err) {
         console.error(err);
     }
 }
-
-exports.isLastSessionExists = isLastSessionExists;
-exports.getLastSessionBlockNumber = getLastSessionBlockNumber;
-exports.recordSession = recordSession;
