@@ -14,6 +14,5 @@
   "relayEthConnectorEvents": true,
   "relayERC20Events": true,
   "relayENearEvents": true,
-  "relayOnlyAuroraEvents": false,
-  "incentivization": []
+  "relayOnlyAuroraEvents": false
 }

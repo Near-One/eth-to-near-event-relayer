@@ -1,5 +1,5 @@
 import {Account, Contract} from "near-api-js";
-import relayerConfig from './json/relayer-config.json';
+import incentivizationConfig from './json/incentivization-config.json';
 import {LockEvent} from './utils_eth';
 import BN from "bn.js";
 
@@ -31,8 +31,7 @@ class IncentivizationContract {
         return (this.contract as any).ft_balance_of({account_id: accountId});
     }
 
-    async registerIfNeeded(accountId: string, gasLimit: BN): Promise<void> {
-        console.log(`Check if registering of ${accountId} is needed`);
+    async registerReceiverIfNeeded(accountId: string, gasLimit: BN): Promise<void> {
         const storageBounds = await (this.contract as any).storage_balance_bounds();
         const currentStorageBalance = await (this.contract as any).storage_balance_of({account_id: accountId});
         const storageMinimumBalance = storageBounds != null ? new BN(storageBounds.min) : new BN(0);
@@ -74,7 +73,7 @@ export class Incentivizer {
 
     constructor(nearAccount: Account) {
         this.nearAccount = nearAccount;
-        for (const configRule of relayerConfig.incentivization) {
+        for (const configRule of incentivizationConfig.rules) {
             const incentivizationRule = new IncentivizationRule(configRule, nearAccount);
             this.rules.set(configRule.ethToken, incentivizationRule);
         }
@@ -92,7 +91,6 @@ export class Incentivizer {
         const amountToTransfer = new BN("1");
 
         try {
-            console.log(`Check incentivization balance`);
             const accountBalance = new BN(await incentivizationRule.contract.balanceOf(this.nearAccount.accountId));
 
             if (accountBalance < amountToTransfer) {
@@ -102,9 +100,8 @@ export class Incentivizer {
             }
 
             const gasLimit = new BN('300' + '0'.repeat(12));
-            await incentivizationRule.contract.registerIfNeeded(lockEvent.accountId, gasLimit);
-            console.log(`Incentivize token: amount:${amountToTransfer} 
-                        address:${incentivizationRule.rule.incentivizationToken} account:${lockEvent.accountId}`);
+            await incentivizationRule.contract.registerReceiverIfNeeded(lockEvent.accountId, gasLimit);
+            console.log(`Reward the account ${lockEvent.accountId} with ${amountToTransfer} of token ${incentivizationRule.rule.incentivizationToken}`);
             await incentivizationRule.contract.transfer(lockEvent.accountId, amountToTransfer.toString(), gasLimit, new BN('1'));
         } catch (e) {
             console.log(e);

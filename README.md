@@ -18,9 +18,10 @@ RPC access can be easily gained from [Alchemy](https://www.alchemyapi.io/).
 and `/Users/<user>/.near-credentials` on MacOS: <br/>
 `$ echo "NEAR_KEY_STORE_PATH=PATH_TO_YOUR_NEAR_CREDENTIALS_HERE" >> .env`
 
-5. Set the incentivization program if needed in `src/json/relayer-config.json` file.
+5. Set the incentivization program if needed in `src/json/incentivization-config.json` file.
 ```
-"incentivization": [
+{
+"rules": [
     {
         // nDAI - nLINK incentivization programm
         "ethToken": "0x6B175474E89094C44Da98b954EedeAC495271d0F", // DAI
@@ -33,6 +34,7 @@ and `/Users/<user>/.near-credentials` on MacOS: <br/>
         // Another incentivization programm here
     }
 ]
+}
 ```
 ## Running
 
