@@ -1,9 +1,8 @@
 import {Account, Contract} from "near-api-js";
-import incentivizationConfig from './json/incentivization-config.json';
 import {LockEvent} from './utils_eth';
 import Binance from 'node-binance-api';
 import BN from "bn.js";
-import {parseTokenAmount} from "./utils_near";
+import {formatTokenAmount, parseTokenAmount} from "./utils_near";
 
 class IncentivizationContract {
     private contract: Contract;
@@ -16,9 +15,13 @@ class IncentivizationContract {
             contractAddress,
             {
                 changeMethods: ['ft_transfer', 'storage_deposit'],
-                viewMethods: ['storage_balance_bounds', 'storage_balance_of', 'ft_balance_of']
+                viewMethods: ['storage_balance_bounds', 'storage_balance_of', 'ft_balance_of', `ft_metadata`]
             }
         );
+    }
+
+    async getDecimals(): Promise<number> {
+        return (await (this.contract as any).ft_metadata()).decimals;
     }
 
     async transfer(receiver_id: string, amount: string, gas_limit: BN, payment_for_storage: BN): Promise<void> {
@@ -51,6 +54,7 @@ class IncentivizationContract {
 }
 
 interface IRule {
+    fiatSymbol: string,
     ethTokenSymbol: string,
     incentivizationTokenSymbol: string,
     ethToken: string
@@ -71,12 +75,13 @@ class IncentivizationRule {
 }
 
 export interface IPriceSource {
-    getPrice(pair: string): Promise<number>;
+    getPrice(fistSymbol: string, secondSymbol: string): Promise<number>;
 }
 
 export class BinancePriceSource implements IPriceSource{
     private binance = new Binance();
-    async getPrice(pair: string): Promise<number>{
+    async getPrice(fistSymbol: string, secondSymbol: string): Promise<number>{
+        const pair = fistSymbol + secondSymbol;
         return Number((await this.binance.prices(pair))[pair]);
     }
 }
@@ -86,9 +91,9 @@ export class Incentivizer {
     private nearAccount: Account;
     private priceSource: IPriceSource;
 
-    constructor(nearAccount: Account, priceSource: IPriceSource = new BinancePriceSource()) {
+    constructor(nearAccount: Account, rules: IRule[], priceSource: IPriceSource = new BinancePriceSource()) {
         this.nearAccount = nearAccount;
-        for (const configRule of incentivizationConfig.rules) {
+        for (const configRule of rules) {
             const incentivizationRule = new IncentivizationRule(configRule, nearAccount);
             this.rules.set(configRule.ethToken, incentivizationRule);
         }
@@ -98,35 +103,37 @@ export class Incentivizer {
 
     async getAmountToTransfer(rule: {ethTokenSymbol: string,
                                      incentivizationTokenSymbol: string,
-                                     incentivizationFactor: number}, eventAmount: number,
+                                     incentivizationFactor: number,
+                                     fiatSymbol: string}, eventAmount: BN,
                                      decimals: number): Promise<BN>{
-        const fiatSymbol = "USDT";
-        let pricePair = rule.ethTokenSymbol + fiatSymbol;
-        const bridgeTokenPrice = await this.priceSource.getPrice(pricePair);
-        pricePair = rule.incentivizationTokenSymbol + fiatSymbol;
-        const incentivizationTokenPrice = await this.priceSource.getPrice(pricePair);
-        const amountBridgeTokenFiat = eventAmount * bridgeTokenPrice;
+        const lockedTokenAmount = Number (formatTokenAmount (eventAmount.toString(), decimals));
+        const bridgeTokenPrice = await this.priceSource.getPrice(rule.ethTokenSymbol, rule.fiatSymbol);
+        const incentivizationTokenPrice = await this.priceSource.getPrice(rule.incentivizationTokenSymbol, rule.fiatSymbol);
+        const amountBridgeTokenFiat = lockedTokenAmount * bridgeTokenPrice;
         const amountIncentivizationFiat = amountBridgeTokenFiat * rule.incentivizationFactor;
-        const amount = parseTokenAmount(String(amountIncentivizationFiat / incentivizationTokenPrice), decimals);
-        return new BN(amount);
+        const tokenAmount = String((amountIncentivizationFiat / incentivizationTokenPrice).toFixed(decimals));
+        return new BN(parseTokenAmount(tokenAmount, decimals));
     }
 
-    async incentivize(lockEvent: LockEvent): Promise<void> {
+    async incentivize(lockEvent: LockEvent): Promise<boolean> {
         const incentivizationRule = this.rules.get(lockEvent.contractAddress.toLowerCase());
-        if (incentivizationRule == null)
-            return;
+        if (incentivizationRule == null) {
+            return false;
+        }
 
-        if (lockEvent.accountId == this.nearAccount.accountId)
-            return;
+        if (lockEvent.accountId == this.nearAccount.accountId) {
+            return false;
+        }
 
         try {
-            const amountToTransfer = await this.getAmountToTransfer(incentivizationRule.rule, Number(lockEvent.amount), 18);
+            const decimals = await incentivizationRule.contract.getDecimals();
+            const amountToTransfer = await this.getAmountToTransfer(incentivizationRule.rule, new BN(lockEvent.amount), decimals);
             const accountBalance = new BN(await incentivizationRule.contract.balanceOf(this.nearAccount.accountId));
 
-            if (accountBalance < amountToTransfer) {
-                console.log(`The account ${this.nearAccount.accountId} hasn't enough balance to transfer the 
+            if (accountBalance.lt(amountToTransfer)) {
+                console.log(`The account ${this.nearAccount.accountId} has balance ${accountBalance} which is not enough to transfer ${amountToTransfer} 
                             ${incentivizationRule.rule.incentivizationToken} tokens`);
-                return;
+                return false;
             }
 
             const gasLimit = new BN('300' + '0'.repeat(12));
@@ -135,6 +142,9 @@ export class Incentivizer {
             await incentivizationRule.contract.transfer(lockEvent.accountId, amountToTransfer.toString(), gasLimit, new BN('1'));
         } catch (e) {
             console.log(e);
+            return false;
         }
+
+        return true;
     }
 }

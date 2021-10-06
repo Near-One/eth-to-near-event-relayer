@@ -63,7 +63,6 @@ class ProofUsageChecker {
     }
 }
 
-
 function trimLeadingZeroes(value: string): string {
     value = value.replace(/^0+/, '');
     if (value === '') {
@@ -79,7 +78,22 @@ export function parseTokenAmount(amt: string, decimals: number): string | null {
     const wholePart = split[0];
     const fracPart = split[1] || '';
     if (split.length > 2 || fracPart.length > decimals) {
-        throw new Error(`Cannot parse '${amt}' as NEAR amount`);
+        throw new Error(`Cannot parse '${amt}' as token amount`);
     }
     return trimLeadingZeroes(wholePart + fracPart.padEnd(decimals, '0'));
 }
+
+export function formatTokenAmount(balance: string, decimals: number): string {
+    const balanceBN = new BN(balance, 10);
+    balance = balanceBN.toString();
+    const wholeStr = balance.substring(0, balance.length - decimals) || '0';
+    const fractionStr = balance.substring(balance.length - decimals)
+        .padStart(decimals, '0').substring(0, decimals);
+
+    return trimTrailingZeroes(`${wholeStr}.${fractionStr}`);
+}
+
+function trimTrailingZeroes(value: string): string {
+    return value.replace(/\.?0*$/, '');
+}
+

@@ -9,6 +9,7 @@ import { Account } from 'near-api-js';
 import { providers, Event } from 'ethers';
 import relayerConfig from './json/relayer-config.json';
 import { Incentivizer } from "./incentivizer";
+import incentivizationConfig from "../src/json/incentivization-config.json";
 
 interface GaugeEvents {
     NUM_PROCESSED: string;
@@ -42,7 +43,7 @@ export abstract class EventRelayer {
         this.gaugeEvents = gaugeEvents;
         this.address = address;
         this.isAuroraTransferSupported = isAuroraTransferSupported;
-        this.incentivizer = new Incentivizer(account);
+        this.incentivizer = new Incentivizer(account, incentivizationConfig.rules);
 
         this.dogstatsd.gauge(gaugeEvents.NUM_PROCESSED, this.processedEventsCounter);
         this.dogstatsd.gauge(gaugeEvents.NUM_SKIPPED, this.skippedEventsCounter);
