@@ -6,7 +6,7 @@
   "author": "dev@near.org",
   "license": "MIT",
   "scripts": {
-    "test": "nyc ./node_modules/.bin/_mocha 'tests/**/*.ts' --timeout 10000"
+    "test": "nyc ./node_modules/.bin/_mocha 'tests/**/*.ts'"
   },
   "dependencies": {
     "@ethereumjs/block": "^3.4.0",

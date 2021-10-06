@@ -1,4 +1,5 @@
 {
   "require": "./register.js",
-  "reporter": "dot"
+  "reporter": "dot",
+  "timeout": 10000
 }

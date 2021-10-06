@@ -1,5 +1,5 @@
-import { suite, test } from '@testdeck/mocha';
-import {assert} from 'chai';
+import {suite, test} from '@testdeck/mocha';
+import {expect} from 'chai';
 import {mock, instance, when} from 'ts-mockito';
 import {BinancePriceSource, Incentivizer} from '../src/incentivizer';
 import {Account} from "near-api-js";
@@ -22,24 +22,28 @@ import BN from "bn.js";
         let decimals = 18;
         const incentivizer = new Incentivizer(instance(mock(Account)), testConfig.rules, instance(mockedPriceSource));
         let result = await incentivizer.getAmountToTransfer(rule, new BN("3".padEnd(decimals, '0')), decimals);
-        assert(result.toString() === "15".padEnd(15, '0'));
+        expect(result.toString()).to.be.equal("15".padEnd(15, '0'));
 
         decimals = 10
         result = await incentivizer.getAmountToTransfer(rule, new BN("55000000000000"), decimals);
-        assert(result.toString() === "275".padEnd(11, '0'));
+        expect(result.toString()).to.be.equal("275".padEnd(11, '0'));
 
         decimals = 0;
         result = await incentivizer.getAmountToTransfer(rule, new BN("5000"), decimals);
-        assert(result.toString() === "3");
+        expect(result.toString()).to.be.equal("3");
 
         result = await incentivizer.getAmountToTransfer(rule, new BN("3000"), decimals);
-        assert(result.toString() === "2");
+        expect(result.toString()).to.be.equal("2");
 
         result = await incentivizer.getAmountToTransfer(rule, new BN("1000"), decimals);
-        assert(result.toString() === "1");
+        expect(result.toString()).to.be.equal("1");
 
         result = await incentivizer.getAmountToTransfer(rule, new BN("100"), decimals);
-        assert(result.toString() === "0");
+        expect(result.toString() === "0");
+
+        decimals = 2;
+        result = await incentivizer.getAmountToTransfer(rule, new BN("10000"), decimals);
+        expect(result.toString()).to.be.equal("5");
     }
 
     @test async getAmountToTransferTestBinance() {
@@ -51,13 +55,13 @@ import BN from "bn.js";
             fiatSymbol: "USDT"
         }, new BN("30000".padEnd(decimals, '0')), decimals);
 
-        assert(result.toString() != "");
+        expect(result.toString()).to.not.be.empty;
     }
 
     @test async parseTokenAmountTest(){
-        console.assert(parseTokenAmount("1.5", 10) === "15000000000");
-        console.assert(parseTokenAmount("100000000", 8) === "1000000000");
-        console.assert(parseTokenAmount("0200000000", 9) === "20000000000");
+        expect(parseTokenAmount("1.5", 10)).to.be.equal("15000000000");
+        expect(parseTokenAmount("10", 8)).to.be.equal("1000000000");
+        expect(parseTokenAmount("020", 8)).to.be.equal("2000000000");
     }
 
     @test async incentivizeTest() {
@@ -83,6 +87,6 @@ import BN from "bn.js";
             accountId: rule.receiverAccountIdForTest
         });
 
-        assert(result == true);
+        expect(result).to.be.true;
     }
 }
