@@ -1,7 +1,7 @@
 import {suite, test} from '@testdeck/mocha';
 import {expect} from 'chai';
-import {instance, mock, when} from 'ts-mockito';
-import {Incentivizer} from '../src/incentivizer';
+import {anything, instance, mock, when} from 'ts-mockito';
+import {IncentivizationContract, Incentivizer} from '../src/incentivizer';
 import {BinancePriceSource} from '../src/price_source'
 import * as nearAPI from "near-api-js";
 import {Account} from "near-api-js";
@@ -9,6 +9,8 @@ import testConfig from "../src/json/test-config.json";
 import {parseTokenAmount} from "../src/utils_near";
 import BN from "bn.js";
 import * as dbManager from "../src/db_manager";
+import {getTotalTokensSpent} from "../src/db_manager";
+import * as fs from "fs";
 
 
 @suite class IncentivizationUnitTests { // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -99,8 +101,59 @@ import * as dbManager from "../src/db_manager";
         expect(await this.incentivizeTest("3")).to.be.false;
     }
 
+    @test async testIncentivizeTotalCap(){
+        const rule = Object.assign({}, testConfig.rules[0]);
+        const mockedContract:IncentivizationContract = mock(IncentivizationContract);
+        when(mockedContract.transfer(anything(),anything(),anything(),anything())).thenResolve({
+            status: null,
+            transaction: {hash: "testHASH"},
+            transaction_outcome: null,
+            receipts_outcome: null
+        });
+        when(mockedContract.getDecimals()).thenResolve(0);
+        when(mockedContract.balanceOf(anything())).thenResolve("1000000");
+        const mockedPriceSource:BinancePriceSource = mock(BinancePriceSource);
+        when(mockedPriceSource.getPrice(anything(), anything())).thenResolve(1.5);
+        const incentivizer = new Incentivizer(instance(mock(Account)), testConfig.rules, instance(mockedPriceSource));
+
+        const lockEvent = {
+            contractAddress: rule.ethToken,
+            sender: "",
+            amount: "",
+            accountId: rule.receiverAccountIdForTest,
+            txHash: ""
+        };
+
+        let totalSpentBefore = getTotalTokensSpent(rule.ethToken, rule.incentivizationToken);
+        lockEvent.amount = "1";
+        let res = await incentivizer.incentivizeByRule(lockEvent, rule, instance(mockedContract));
+        expect(res).to.be.false;
+        let totalSpentAfter = getTotalTokensSpent(rule.ethToken, rule.incentivizationToken);
+        expect(totalSpentAfter.toString()).to.be.equal(totalSpentBefore.toString());
+
+        lockEvent.amount = "10000";
+        res = await incentivizer.incentivizeByRule(lockEvent, rule, instance(mockedContract));
+        expect(res).to.be.true;
+        totalSpentBefore = totalSpentAfter;
+        totalSpentAfter = getTotalTokensSpent(rule.ethToken, rule.incentivizationToken);
+        expect(totalSpentAfter.toString()).to.be.equal(totalSpentBefore.add(new BN("10")).toString());
+
+        rule.incentivizationTotalCap = 10;
+        res = await incentivizer.incentivizeByRule(lockEvent, rule, instance(mockedContract));
+        expect(res).to.be.false;
+        totalSpentBefore = totalSpentAfter;
+        totalSpentAfter = getTotalTokensSpent(rule.ethToken, rule.incentivizationToken);
+        expect(totalSpentAfter.toString()).to.be.equal(totalSpentBefore.toString());
+    }
+
     async before() {
-        await dbManager.init();
+        const dbFile = ".loki_db_test.json";
+        try {
+            fs.unlinkSync(dbFile)
+        } catch(err) {
+            // continue regardless of error
+        }
+        await dbManager.open(dbFile);
     }
 
     async after() {
