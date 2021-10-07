@@ -172,7 +172,9 @@ relayerApp.start()
 .then(() => process.exit(0))
 .catch(error => {
     console.error(error);
-    process.exit(1);
+    dbManager.close().then(() => {
+        process.exit(1);
+    });
 })
 
 process.on('SIGTERM', () => {

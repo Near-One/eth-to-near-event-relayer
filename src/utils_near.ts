@@ -5,19 +5,15 @@ import * as connectors from './connectors';
 
 const NEAR_YOCTO_TO_NANO = new BN(10).pow(new BN(15))
 
-export async function depositProofToNear(nearAccount: Account, connectorType: ConnectorType, proof: Uint8Array): Promise<void> {
+export async function depositProofToNear(nearAccount: Account, connectorType: ConnectorType, proof: Uint8Array) { // eslint-disable-line @typescript-eslint/explicit-module-boundary-types
     const connector = connectors.getConnector(nearAccount, connectorType);
-
     const gas_limit = new BN('300' + '0'.repeat(12)); // Gas limit
     const payment_for_storage = new BN('100000000000000000000').mul(new BN('600')); // Attached payment to pay for the storage
 
     console.log(`Submitting deposit transaction from: ${nearAccount.accountId} account to ${connector.address}`);
-    try {
-        await connector.submit(proof, gas_limit, payment_for_storage);
-        console.log(`Submitted.`);
-    } catch (error) {
-        console.log(error);
-    }
+    const res = await connector.submit(proof, gas_limit, payment_for_storage);
+    console.log(`Submitted.`);
+    return res;
 }
 
 export async function nearIsUsedProof(nearAccount: Account, connectorType: ConnectorType, proof: ArrayBuffer | SharedArrayBuffer): Promise<boolean> {

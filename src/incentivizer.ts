@@ -3,12 +3,11 @@ import {LockEvent} from './utils_eth';
 import Binance from 'node-binance-api';
 import BN from "bn.js";
 import {formatTokenAmount, parseTokenAmount} from "./utils_near";
-import {FinalExecutionOutcome} from "near-api-js/src/providers/index";
 import {incentivizationCol} from './db_manager';
 
 class IncentivizationContract {
     private contract: Contract;
-    private address: string;
+    private readonly address: string;
 
     constructor(nearAccount: Account, contractAddress: string) {
         this.address = contractAddress;
@@ -26,7 +25,7 @@ class IncentivizationContract {
         return (await (this.contract as any).ft_metadata()).decimals;
     }
 
-    async transfer(receiver_id: string, amount: string, gas_limit: BN, payment_for_storage: BN): Promise<FinalExecutionOutcome> {
+    async transfer(receiver_id: string, amount: string, gas_limit: BN, payment_for_storage: BN) {
         return this.contract.account.functionCall({
             contractId: this.address,
             methodName: "ft_transfer",
@@ -69,8 +68,8 @@ interface IRule {
 }
 
 class IncentivizationRule {
-    rule: IRule;
-    contract: IncentivizationContract;
+    readonly rule: IRule;
+    readonly contract: IncentivizationContract;
 
     constructor(rule: IRule, nearAccount: Account) {
         this.rule = rule;
@@ -129,31 +128,29 @@ export class Incentivizer {
             return false;
         }
 
-        try {
-            const decimals = await incentivizationRule.contract.getDecimals();
-            const amountToTransfer = await this.getAmountToTransfer(incentivizationRule.rule, new BN(lockEvent.amount), decimals);
-            const accountBalance = new BN(await incentivizationRule.contract.balanceOf(this.nearAccount.accountId));
+        const decimals = await incentivizationRule.contract.getDecimals();
+        const amountToTransfer = await this.getAmountToTransfer(incentivizationRule.rule, new BN(lockEvent.amount), decimals);
+        const accountBalance = new BN(await incentivizationRule.contract.balanceOf(this.nearAccount.accountId));
 
-            if (accountBalance.lt(amountToTransfer)) {
-                console.log(`The account ${this.nearAccount.accountId} has balance ${accountBalance} which is not enough to transfer ${amountToTransfer} 
+        if (amountToTransfer.lten(0))
+            return false;
+
+        if (accountBalance.lt(amountToTransfer)) {
+            console.log(`The account ${this.nearAccount.accountId} has balance ${accountBalance} which is not enough to transfer ${amountToTransfer} 
                             ${incentivizationRule.rule.incentivizationToken} tokens`);
-                return false;
-            }
-
-            const gasLimit = new BN('300' + '0'.repeat(12));
-            await incentivizationRule.contract.registerReceiverIfNeeded(lockEvent.accountId, gasLimit);
-            console.log(`Reward the account ${lockEvent.accountId} with ${amountToTransfer} of token ${incentivizationRule.rule.incentivizationToken}`);
-            const res = await incentivizationRule.contract.transfer(lockEvent.accountId, amountToTransfer.toString(), gasLimit, new BN('1'));
-            incentivizationCol().insert({ethTokenAddress: lockEvent.contractAddress,
-                accountId: lockEvent.accountId,
-                txHash: res.transaction.hash,
-                tokensAmount: amountToTransfer.toString()
-            });
-        } catch (e) {
-            console.log(e);
             return false;
         }
 
+        const gasLimit = new BN('300' + '0'.repeat(12));
+        await incentivizationRule.contract.registerReceiverIfNeeded(lockEvent.accountId, gasLimit);
+        console.log(`Reward the account ${lockEvent.accountId} with ${amountToTransfer} of token ${incentivizationRule.rule.incentivizationToken}`);
+        const res = await incentivizationRule.contract.transfer(lockEvent.accountId, amountToTransfer.toString(), gasLimit, new BN('1'));
+        incentivizationCol().insert({ethTokenAddress: lockEvent.contractAddress,
+            accountId: lockEvent.accountId,
+            txHash: res.transaction.hash,
+            tokensAmount: amountToTransfer.toString(),
+            eventTxHash: lockEvent.txHash
+        });
         return true;
     }
 }

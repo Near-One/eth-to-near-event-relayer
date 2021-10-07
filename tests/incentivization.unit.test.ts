@@ -1,16 +1,16 @@
 import {suite, test} from '@testdeck/mocha';
 import {expect} from 'chai';
-import {mock, instance, when} from 'ts-mockito';
+import {instance, mock, when} from 'ts-mockito';
 import {BinancePriceSource, Incentivizer} from '../src/incentivizer';
+import * as nearAPI from "near-api-js";
 import {Account} from "near-api-js";
 import testConfig from "../src/json/test-config.json";
-import * as nearAPI from "near-api-js";
 import {parseTokenAmount} from "../src/utils_near";
 import BN from "bn.js";
 import * as dbManager from "../src/db_manager";
 
 
-@suite class IncentivizationUnitTests {
+@suite class IncentivizationUnitTests { // eslint-disable-line @typescript-eslint/no-unused-vars
     @test async getAmountToTransferTest() {
         const mockedPriceSource:BinancePriceSource = mock(BinancePriceSource);
         when(mockedPriceSource.getPrice("DAI","USDT")).thenResolve(1.5);
@@ -66,8 +66,7 @@ import * as dbManager from "../src/db_manager";
         expect(parseTokenAmount("020", 8)).to.be.equal("2000000000");
     }
 
-    @test async incentivizeTest() {
-        const decimals = 0;
+    async incentivizeTest(amount: string): Promise<boolean>{
         const keyStore = new nearAPI.keyStores.UnencryptedFileSystemKeyStore(testConfig.keyStorePath);
         const near = await nearAPI.connect({
             deps: {
@@ -82,14 +81,20 @@ import * as dbManager from "../src/db_manager";
         when(mockedPriceSource.getPrice("eFAU","USDT")).thenResolve(2);
         const incentivizer = new Incentivizer(relayerNearAccount, testConfig.rules, instance(mockedPriceSource));
         const rule = testConfig.rules[0];
-        const result = await incentivizer.incentivize({
+        return await incentivizer.incentivize({
             contractAddress: rule.ethToken,
             sender: "",
-            amount: "3000".padEnd(decimals, '0'),
+            amount: amount,
             accountId: rule.receiverAccountIdForTest
         });
+    }
 
-        expect(result).to.be.true;
+    @test async incentivizeTestTrue() {
+        expect(await this.incentivizeTest("3000")).to.be.true;
+    }
+
+    @test async incentivizeTestFalse() {
+        expect(await this.incentivizeTest("3")).to.be.false;
     }
 
     async before() {

@@ -10,6 +10,7 @@ import { providers, Event } from 'ethers';
 import relayerConfig from './json/relayer-config.json';
 import { Incentivizer } from "./incentivizer";
 import incentivizationConfig from "../src/json/incentivization-config.json";
+import {relayerCol} from "./db_manager";
 
 interface GaugeEvents {
     NUM_PROCESSED: string;
@@ -19,9 +20,9 @@ interface GaugeEvents {
 }
 
 export abstract class EventRelayer {
-    processedEventsCounter = 0;
-    skippedEventsCounter = 0;
-    relayedEventsCounter = 0;
+    protected processedEventsCounter = 0;
+    protected skippedEventsCounter = 0;
+    protected relayedEventsCounter = 0;
     protected relayerNearAccount: Account;
     protected ethersProvider: providers.JsonRpcProvider;
     protected dogstatsd: StatsD;
@@ -80,6 +81,7 @@ export abstract class EventRelayer {
     }
 
     protected async process(eventLog: Event): Promise<void> {
+        const receipt = await eventLog.getTransactionReceipt();
         const proof = await findProofForEvent(this.ethersProvider, this.connectorType, eventLog);
         const isUsedProof = await nearIsUsedProof(this.relayerNearAccount, this.connectorType, proof);
 
@@ -93,16 +95,29 @@ export abstract class EventRelayer {
             return;
         }
 
-        await depositProofToNear(this.relayerNearAccount, this.connectorType, proof);
+        const relayEntry = relayerCol().insert({
+            eventTxHash: receipt.transactionHash,
+            blockNumber: receipt.blockNumber,
+            depositTxHash: ""
+        });
 
-        this.relayedConnectorEventsCounter.inc(1);
-        this.relayedEventsCounter += 1;
-        this.dogstatsd.gauge(this.gaugeEvents.NUM_RELAYED, this.relayedEventsCounter);
-        this.dogstatsd.gauge(this.gaugeEvents.LAST_BLOCK_WITH_RELAYED, eventLog.blockNumber);
+        try {
+            const depositRes = await depositProofToNear(this.relayerNearAccount, this.connectorType, proof);
+            relayEntry.depositTxHash = depositRes.transaction.hash;
+            relayerCol().update(relayEntry);
 
-        const lockEvent = getLockEvent(eventLog);
-        if (lockEvent != null)
-            await this.incentivizer.incentivize(lockEvent);
+            this.relayedConnectorEventsCounter.inc(1);
+            this.relayedEventsCounter += 1;
+            this.dogstatsd.gauge(this.gaugeEvents.NUM_RELAYED, this.relayedEventsCounter);
+            this.dogstatsd.gauge(this.gaugeEvents.LAST_BLOCK_WITH_RELAYED, eventLog.blockNumber);
+
+            const lockEvent = getLockEvent(eventLog, receipt);
+            if (lockEvent != null) {
+                await this.incentivizer.incentivize(lockEvent);
+            }
+        } catch (error) {
+            console.log(error);
+        }
     }
 
     protected isSkipEvent(isAuroraEvent: boolean): boolean {
