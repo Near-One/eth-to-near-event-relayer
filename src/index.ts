@@ -10,6 +10,7 @@ import {StatsD} from 'hot-shots';
 import relayerConfig from './json/relayer-config.json';
 import * as nearAPI from 'near-api-js';
 import yargs from 'yargs';
+import * as dbManager from './db_manager'
 
 dotenv.config();
 
@@ -19,6 +20,7 @@ class RelayerApp {
     private sleepPromiseResolve = null;
 
     async start() {
+        await dbManager.init();
         const argv = yargs(process.argv.slice(2))
             .example('$0 --start-from-block 1234', 'Start the event-relayer from the given block number')
             .example('$0 --restore-last-session', 'Start the event-relayer restoring the latest session')
@@ -53,6 +55,8 @@ class RelayerApp {
             relayerConfig.nearNetwork,
             blockNumberFrom,
         );
+
+        await dbManager.close();
     }
 
     close() {

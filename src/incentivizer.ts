@@ -3,6 +3,8 @@ import {LockEvent} from './utils_eth';
 import Binance from 'node-binance-api';
 import BN from "bn.js";
 import {formatTokenAmount, parseTokenAmount} from "./utils_near";
+import {FinalExecutionOutcome} from "near-api-js/src/providers/index";
+import {incentivizationCol} from './db_manager';
 
 class IncentivizationContract {
     private contract: Contract;
@@ -24,11 +26,13 @@ class IncentivizationContract {
         return (await (this.contract as any).ft_metadata()).decimals;
     }
 
-    async transfer(receiver_id: string, amount: string, gas_limit: BN, payment_for_storage: BN): Promise<void> {
-        await (this.contract as any).ft_transfer({
+    async transfer(receiver_id: string, amount: string, gas_limit: BN, payment_for_storage: BN): Promise<FinalExecutionOutcome> {
+        return this.contract.account.functionCall({
+            contractId: this.address,
+            methodName: "ft_transfer",
             args: {receiver_id: receiver_id, amount: amount},
             gas: gas_limit,
-            amount: payment_for_storage
+            attachedDeposit: payment_for_storage
         });
     }
 
@@ -139,7 +143,12 @@ export class Incentivizer {
             const gasLimit = new BN('300' + '0'.repeat(12));
             await incentivizationRule.contract.registerReceiverIfNeeded(lockEvent.accountId, gasLimit);
             console.log(`Reward the account ${lockEvent.accountId} with ${amountToTransfer} of token ${incentivizationRule.rule.incentivizationToken}`);
-            await incentivizationRule.contract.transfer(lockEvent.accountId, amountToTransfer.toString(), gasLimit, new BN('1'));
+            const res = await incentivizationRule.contract.transfer(lockEvent.accountId, amountToTransfer.toString(), gasLimit, new BN('1'));
+            incentivizationCol().insert({ethTokenAddress: lockEvent.contractAddress,
+                accountId: lockEvent.accountId,
+                txHash: res.transaction.hash,
+                tokensAmount: amountToTransfer.toString()
+            });
         } catch (e) {
             console.log(e);
             return false;

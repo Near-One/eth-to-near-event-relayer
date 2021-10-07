@@ -26,7 +26,9 @@
     "rainbow-bridge-utils": "1.0.0",
     "rainbow-token-connector": "https://github.com/aurora-is-near/rainbow-token-connector",
     "web3": "^1.4.0",
-    "yargs": "^17.0.1"
+    "yargs": "^17.0.1",
+    "@types/lokijs": "^1.5.7",
+    "lokijs": "^1.5.12"
   },
   "devDependencies": {
     "@testdeck/mocha": "^0.1.2",

@@ -7,6 +7,8 @@ import testConfig from "../src/json/test-config.json";
 import * as nearAPI from "near-api-js";
 import {parseTokenAmount} from "../src/utils_near";
 import BN from "bn.js";
+import * as dbManager from "../src/db_manager";
+
 
 @suite class IncentivizationUnitTests {
     @test async getAmountToTransferTest() {
@@ -88,5 +90,13 @@ import BN from "bn.js";
         });
 
         expect(result).to.be.true;
+    }
+
+    async before() {
+        await dbManager.init();
+    }
+
+    async after() {
+        await dbManager.close();
     }
 }
