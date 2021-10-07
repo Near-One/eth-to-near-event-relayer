@@ -25,8 +25,8 @@ export async function close(): Promise<lokijs> {
 }
 
 export function incentivizationCol(){ // eslint-disable-line @typescript-eslint/explicit-module-boundary-types
-    return db.addCollection("incentivization", { indices: ["ethTokenAddress", "tokensAmount"],
-        exact:["ethTokenAddress", "accountId", "txHash", "tokensAmount", "eventTxHash"] });
+    return db.addCollection("incentivization", { indices: ["ethTokenAddress", "incentivizationTokenAddress"],
+        exact:["ethTokenAddress", "incentivizationTokenAddress", "accountId", "txHash", "tokensAmount", "eventTxHash"] });
 }
 
 export function relayerCol(){ // eslint-disable-line @typescript-eslint/explicit-module-boundary-types

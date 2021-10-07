@@ -85,7 +85,8 @@ import * as dbManager from "../src/db_manager";
             contractAddress: rule.ethToken,
             sender: "",
             amount: amount,
-            accountId: rule.receiverAccountIdForTest
+            accountId: rule.receiverAccountIdForTest,
+            txHash: ""
         });
     }
 

@@ -129,11 +129,34 @@ export class Incentivizer {
         }
 
         const decimals = await incentivizationRule.contract.getDecimals();
-        const amountToTransfer = await this.getAmountToTransfer(incentivizationRule.rule, new BN(lockEvent.amount), decimals);
+        let amountToTransfer = await this.getAmountToTransfer(incentivizationRule.rule, new BN(lockEvent.amount), decimals);
         const accountBalance = new BN(await incentivizationRule.contract.balanceOf(this.nearAccount.accountId));
-
-        if (amountToTransfer.lten(0))
+        if (amountToTransfer.lten(0)) {
             return false;
+        }
+
+        const totalSpent = incentivizationCol().chain().find({ethTokenAddress: incentivizationRule.rule.ethToken,
+            incentivizationTokenAddress: incentivizationRule.rule.incentivizationToken
+        }).mapReduce((obj)=>{return obj.tokensAmount}, (array)=>{
+            const sum = new BN(0);
+            for (const amount of array){
+                if(amount != null){
+                    sum.iadd(new BN(amount));
+                }
+            }
+            return sum;
+        });
+
+        const totalCap = new BN (formatTokenAmount (incentivizationRule.rule.incentivizationTotalCap.toString(), decimals));
+        if (totalSpent.gte(totalCap)){
+            console.log(`The total cap ${totalCap} was exhausted`);
+            return false;
+        }
+
+        const remainingCap = totalCap.sub(totalSpent);
+        if (amountToTransfer.gt(remainingCap)){
+            amountToTransfer = remainingCap;
+        }
 
         if (accountBalance.lt(amountToTransfer)) {
             console.log(`The account ${this.nearAccount.accountId} has balance ${accountBalance} which is not enough to transfer ${amountToTransfer} 
@@ -145,7 +168,8 @@ export class Incentivizer {
         await incentivizationRule.contract.registerReceiverIfNeeded(lockEvent.accountId, gasLimit);
         console.log(`Reward the account ${lockEvent.accountId} with ${amountToTransfer} of token ${incentivizationRule.rule.incentivizationToken}`);
         const res = await incentivizationRule.contract.transfer(lockEvent.accountId, amountToTransfer.toString(), gasLimit, new BN('1'));
-        incentivizationCol().insert({ethTokenAddress: lockEvent.contractAddress,
+        incentivizationCol().insert({ethTokenAddress: incentivizationRule.rule.ethToken,
+            incentivizationTokenAddress: incentivizationRule.rule.incentivizationToken,
             accountId: lockEvent.accountId,
             txHash: res.transaction.hash,
             tokensAmount: amountToTransfer.toString(),
