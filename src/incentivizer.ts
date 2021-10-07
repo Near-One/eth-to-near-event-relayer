@@ -3,9 +3,9 @@ import {LockEvent} from './utils_eth';
 import {IPriceSource, BinancePriceSource} from './price_source'
 import BN from "bn.js";
 import {formatTokenAmount, parseTokenAmount} from "./utils_near";
-import {incentivizationCol} from './db_manager';
+import {getTotalTokensSpent, incentivizationCol} from './db_manager';
 
-class IncentivizationContract {
+export class IncentivizationContract {
     private contract: Contract;
     private readonly address: string;
 
@@ -25,7 +25,7 @@ class IncentivizationContract {
         return (await (this.contract as any).ft_metadata()).decimals;
     }
 
-    async transfer(receiver_id: string, amount: string, gas_limit: BN, payment_for_storage: BN) {
+    async transfer(receiver_id: string, amount: string, gas_limit: BN, payment_for_storage: BN) { // eslint-disable-line @typescript-eslint/explicit-module-boundary-types
         return this.contract.account.functionCall({
             contractId: this.address,
             methodName: "ft_transfer",
@@ -67,26 +67,15 @@ interface IRule {
     incentivizationTotalCap: number,
 }
 
-class IncentivizationRule {
-    readonly rule: IRule;
-    readonly contract: IncentivizationContract;
-
-    constructor(rule: IRule, nearAccount: Account) {
-        this.rule = rule;
-        this.contract = new IncentivizationContract(nearAccount, rule.incentivizationToken);
-    }
-}
-
 export class Incentivizer {
-    private rules = new Map<string, IncentivizationRule>();
-    private nearAccount: Account;
+    private rules = new Map<string, IRule>();
+    private readonly nearAccount: Account;
     private priceSource: IPriceSource;
 
     constructor(nearAccount: Account, rules: IRule[], priceSource: IPriceSource = new BinancePriceSource()) {
         this.nearAccount = nearAccount;
         for (const configRule of rules) {
-            const incentivizationRule = new IncentivizationRule(configRule, nearAccount);
-            this.rules.set(configRule.ethToken, incentivizationRule);
+            this.rules.set(configRule.ethToken, configRule);
         }
 
         this.priceSource = priceSource;
@@ -106,9 +95,9 @@ export class Incentivizer {
         return new BN(parseTokenAmount(tokenAmount, decimals));
     }
 
-    async incentivize(lockEvent: LockEvent): Promise<boolean> {
-        const incentivizationRule = this.rules.get(lockEvent.contractAddress.toLowerCase());
-        if (incentivizationRule == null) {
+    async incentivize (lockEvent: LockEvent): Promise<boolean> {
+        const rule = this.rules.get(lockEvent.contractAddress.toLowerCase());
+        if (rule == null) {
             return false;
         }
 
@@ -116,26 +105,20 @@ export class Incentivizer {
             return false;
         }
 
-        const decimals = await incentivizationRule.contract.getDecimals();
-        let amountToTransfer = await this.getAmountToTransfer(incentivizationRule.rule, new BN(lockEvent.amount), decimals);
-        const accountBalance = new BN(await incentivizationRule.contract.balanceOf(this.nearAccount.accountId));
+        const contract = new IncentivizationContract(this.nearAccount, rule.incentivizationToken);
+        return this.incentivizeByRule (lockEvent, rule, contract);
+    }
+
+    async incentivizeByRule(lockEvent: LockEvent, rule: IRule, contract: IncentivizationContract): Promise<boolean> {
+        const decimals = await contract.getDecimals();
+        let amountToTransfer = await this.getAmountToTransfer(rule, new BN(lockEvent.amount), decimals);
+        const accountBalance = new BN(await contract.balanceOf(this.nearAccount.accountId));
         if (amountToTransfer.lten(0)) {
             return false;
         }
 
-        const totalSpent = incentivizationCol().chain().find({ethTokenAddress: incentivizationRule.rule.ethToken,
-            incentivizationTokenAddress: incentivizationRule.rule.incentivizationToken
-        }).mapReduce((obj)=>{return obj.tokensAmount}, (array)=>{
-            const sum = new BN(0);
-            for (const amount of array){
-                if(amount != null){
-                    sum.iadd(new BN(amount));
-                }
-            }
-            return sum;
-        });
-
-        const totalCap = new BN (formatTokenAmount (incentivizationRule.rule.incentivizationTotalCap.toString(), decimals));
+        const totalSpent = getTotalTokensSpent(rule.ethToken, rule.incentivizationToken);
+        const totalCap = new BN (formatTokenAmount (rule.incentivizationTotalCap.toString(), decimals));
         if (totalSpent.gte(totalCap)){
             console.log(`The total cap ${totalCap} was exhausted`);
             return false;
@@ -148,16 +131,16 @@ export class Incentivizer {
 
         if (accountBalance.lt(amountToTransfer)) {
             console.log(`The account ${this.nearAccount.accountId} has balance ${accountBalance} which is not enough to transfer ${amountToTransfer} 
-                            ${incentivizationRule.rule.incentivizationToken} tokens`);
+                            ${rule.incentivizationToken} tokens`);
             return false;
         }
 
         const gasLimit = new BN('300' + '0'.repeat(12));
-        await incentivizationRule.contract.registerReceiverIfNeeded(lockEvent.accountId, gasLimit);
-        console.log(`Reward the account ${lockEvent.accountId} with ${amountToTransfer} of token ${incentivizationRule.rule.incentivizationToken}`);
-        const res = await incentivizationRule.contract.transfer(lockEvent.accountId, amountToTransfer.toString(), gasLimit, new BN('1'));
-        incentivizationCol().insert({ethTokenAddress: incentivizationRule.rule.ethToken,
-            incentivizationTokenAddress: incentivizationRule.rule.incentivizationToken,
+        await contract.registerReceiverIfNeeded(lockEvent.accountId, gasLimit);
+        console.log(`Reward the account ${lockEvent.accountId} with ${amountToTransfer} of token ${rule.incentivizationToken}`);
+        const res = await contract.transfer(lockEvent.accountId, amountToTransfer.toString(), gasLimit, new BN('1'));
+        incentivizationCol().insert({ethTokenAddress: rule.ethToken,
+            incentivizationTokenAddress: rule.incentivizationToken,
             accountId: lockEvent.accountId,
             txHash: res.transaction.hash,
             tokensAmount: amountToTransfer.toString(),
