@@ -1,6 +1,6 @@
 import {Account, Contract} from "near-api-js";
 import {LockEvent} from './utils_eth';
-import Binance from 'node-binance-api';
+import {IPriceSource, BinancePriceSource} from './price_source'
 import BN from "bn.js";
 import {formatTokenAmount, parseTokenAmount} from "./utils_near";
 import {incentivizationCol} from './db_manager';
@@ -74,18 +74,6 @@ class IncentivizationRule {
     constructor(rule: IRule, nearAccount: Account) {
         this.rule = rule;
         this.contract = new IncentivizationContract(nearAccount, rule.incentivizationToken);
-    }
-}
-
-export interface IPriceSource {
-    getPrice(fistSymbol: string, secondSymbol: string): Promise<number>;
-}
-
-export class BinancePriceSource implements IPriceSource{
-    private binance = new Binance();
-    async getPrice(fistSymbol: string, secondSymbol: string): Promise<number>{
-        const pair = fistSymbol + secondSymbol;
-        return Number((await this.binance.prices(pair))[pair]);
     }
 }
 

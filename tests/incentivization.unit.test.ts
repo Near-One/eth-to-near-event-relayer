@@ -1,7 +1,8 @@
 import {suite, test} from '@testdeck/mocha';
 import {expect} from 'chai';
 import {instance, mock, when} from 'ts-mockito';
-import {BinancePriceSource, Incentivizer} from '../src/incentivizer';
+import {Incentivizer} from '../src/incentivizer';
+import {BinancePriceSource} from '../src/price_source'
 import * as nearAPI from "near-api-js";
 import {Account} from "near-api-js";
 import testConfig from "../src/json/test-config.json";
