@@ -5,9 +5,9 @@ import * as ethers from 'ethers';
 import * as utils from 'ethereumjs-util';
 import {serialize as serializeBorsh} from 'near-api-js/lib/utils/serialize';
 import {promises as fs} from "fs"
-import Web3 from 'web3';
-import {ConnectorType, IBlockTransactionString, IReceipt, RetrieveReceiptsMode} from './types';
+import {ConnectorType, RetrieveReceiptsMode} from './types';
 import Path = require('path');
+import {TreeBuilder} from "./eth_proof_tree_builder";
 
 interface IProof {
     log_index: number;
@@ -61,121 +61,11 @@ function getFilenamePrefix(connectorType: ConnectorType) {
     return filenamePrefix;
 }
 
-export class TreeBuilder {
-    private ethersProvider: ethers.providers.JsonRpcProvider;
-    private readonly getReceipts: (block: IBlockTransactionString) => Promise<Array<IReceipt>>;
-
-    constructor(provider: ethers.providers.JsonRpcProvider, mode: RetrieveReceiptsMode) {
-        this.ethersProvider = provider;
-        switch (mode){
-            case RetrieveReceiptsMode.Default:
-                this.getReceipts = this.getReceiptsForBlock;
-                break;
-            case RetrieveReceiptsMode.Batch:
-                this.getReceipts = this.getReceiptsForBlockBatch;
-                break;
-            case RetrieveReceiptsMode.Parity:
-                this.getReceipts = this.getReceiptsForBlockParity;
-                break;
-        }
-    }
-
-    async getTreeForBlock(block: IBlockTransactionString): Promise<Tree>{
-        const blockReceiptsFilePath = `build/proofs/block_receipts_${block.hash}.json`;
-        let receipts: Array<IReceipt>;
-        try {
-            receipts = JSON.parse(await fs.readFile(blockReceiptsFilePath ,'utf8'));
-        } catch(_e) {
-            receipts = await this.getReceipts(block);
-            await fs.writeFile(blockReceiptsFilePath, JSON.stringify(receipts));
-        }
-
-        const tree = new Tree();
-        for (const receipt of receipts) {
-            await tree.put(encode(receipt.transactionIndex), Receipt.fromObject(receipt).serialize());
-        }
-
-        const computedRoot = tree.root.toString('hex');
-        const expectedRoot = block.receiptsRoot.slice(2);
-        if (computedRoot !== expectedRoot) {
-            throw {message: "Invalid root", computedRoot, expectedRoot};
-        }
-        return tree;
-    }
-
-    private async getReceiptsForBlock(block: IBlockTransactionString): Promise<Array<IReceipt>>{
-        return await Promise.all(
-            block.transactions.map(async (tx) =>{
-                    const txReceipt = await this.ethersProvider.getTransactionReceipt(tx);
-                    const receipt: IReceipt = {
-                        transactionIndex: txReceipt.transactionIndex,
-                        logs: txReceipt.logs,
-                        logsBloom: txReceipt.logsBloom,
-                        cumulativeGasUsed: txReceipt.cumulativeGasUsed.toNumber(),
-                        status: txReceipt.status,
-                        type: txReceipt.type
-                    };
-
-                    return receipt;
-                }
-            ));
-    }
-
-    private async getReceiptsForBlockBatch(block: IBlockTransactionString): Promise<Array<IReceipt>>{
-        const web3: any = new Web3(this.ethersProvider.connection.url);
-        const batch = new web3.BatchRequest();
-        const promises = block.transactions.map(tx => {
-            return new Promise((resolve, reject) => {
-                const req = web3.eth.getTransactionReceipt.request(tx, (err: any, data: any) => {
-                        if (err) reject(err);
-                        else resolve(data);
-                    },
-                );
-                batch.add(req);
-            });
-        });
-
-        batch.execute();
-        const receipts = await Promise.all(promises);
-        return receipts.map((txReceipt: any) => {
-            const receipt: IReceipt = {
-                transactionIndex: txReceipt.transactionIndex,
-                logs: txReceipt.logs,
-                logsBloom: txReceipt.logsBloom,
-                cumulativeGasUsed: Number(txReceipt.cumulativeGasUsed),
-                status: Number(txReceipt.status),
-                type: Number(txReceipt.type)
-            };
-
-            return receipt;
-        });
-    }
-
-    private async getReceiptsForBlockParity(block: IBlockTransactionString): Promise<Array<IReceipt>>{
-        const receipts = await this.ethersProvider.send(
-            'parity_getBlockReceipts',
-            [ethers.BigNumber.from(block.number)._hex, false]);
-
-        return receipts.map((txReceipt: any) => {
-            const receipt: IReceipt = {
-                transactionIndex: txReceipt.transactionIndex,
-                logs: txReceipt.logs,
-                logsBloom: txReceipt.logsBloom,
-                cumulativeGasUsed: Number(txReceipt.cumulativeGasUsed),
-                status: Number(txReceipt.status),
-                type: Number(txReceipt.type)
-            };
-
-            return receipt;
-        });
-    }
-}
-
-export async function findProofForEvent(ethersProvider: ethers.providers.JsonRpcProvider, connectorType: ConnectorType, eventLog: ethers.Event) : Promise<Uint8Array> {
+export async function findProofForEvent(treeBuilder: TreeBuilder, ethersProvider: ethers.providers.JsonRpcProvider,
+                                        connectorType: ConnectorType, eventLog: ethers.Event) : Promise<Uint8Array> {
     const receipt: any = await eventLog.getTransactionReceipt();
     receipt.cumulativeGasUsed = receipt.cumulativeGasUsed.toNumber();
     console.log(`Generating the proof for TX with hash: ${receipt.transactionHash} at height ${receipt.blockNumber}`);
-    const treeBuilder = new TreeBuilder(ethersProvider, RetrieveReceiptsMode.Batch);
     const blockData = await ethersProvider.send(
         'eth_getBlockByNumber',
         [ethers.BigNumber.from(receipt.blockNumber)._hex, false]);
