@@ -10,6 +10,7 @@ import {StatsD} from 'hot-shots';
 import relayerConfig from './json/relayer-config.json';
 import * as nearAPI from 'near-api-js';
 import yargs from 'yargs';
+import {StaticJsonRpcProvider} from "./rpc_provider";
 
 dotenv.config();
 
@@ -45,7 +46,7 @@ class RelayerApp {
         }
 
         const url = process.env.WEB3_RPC_ENDPOINT;
-        const ethersProvider = new ethers.providers.JsonRpcProvider(url);
+        const ethersProvider = new StaticJsonRpcProvider(url);
 
         await this.startRelayerFromBlockNumber(
             ethersProvider,
