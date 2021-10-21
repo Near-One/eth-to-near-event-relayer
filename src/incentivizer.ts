@@ -1,16 +1,19 @@
 import {Account} from "near-api-js";
-import {LockEvent} from './utils_eth';
+import {erc20Abi, LockEvent} from './utils_eth';
 import {IPriceSource, BinancePriceSource} from './price_source'
 import BN from "bn.js";
 import {formatTokenAmount, parseTokenAmount} from "./utils_near";
 import {getTotalTokensSpent, incentivizationCol} from './db_manager';
 import {FungibleToken} from "./fungible_token";
+import {ethers} from "ethers";
 
 interface IRule {
     uuid: string,
     fiatSymbol: string,
     ethTokenSymbol: string,
+    ethTokenDecimals: number,
     incentivizationTokenSymbol: string,
+    incentivizationTokenDecimals: number,
     ethToken: string
     bridgedToken: string,
     incentivizationToken: string,
@@ -29,7 +32,7 @@ export class Incentivizer {
         this.priceSource = priceSource;
     }
 
-    init(rules: IRule[]): void {
+    addRules(rules: IRule[]): void {
         for (const configRule of rules) {
             let arrayOfRules = this.rulesByEthToken.get(configRule.ethToken);
             if (arrayOfRules == null) {
@@ -41,22 +44,40 @@ export class Incentivizer {
         }
     }
 
-    async getAmountToTransfer(rule: {ethTokenSymbol: string,
-                                     incentivizationTokenSymbol: string,
-                                     incentivizationFactor: number,
-                                     incentivizationBaseAmount: number,
-                                     fiatSymbol: string},
-                                     eventAmount: BN, decimals: number): Promise<BN> {
-        const lockedTokenAmount = Number (formatTokenAmount (eventAmount.toString(), decimals));
+    static async validateRules(rules: IRule[], nearAccount: Account, ethersProvider: ethers.providers.Provider): Promise<void> {
+        for (const rule of rules) {
+            const erc20Contract = new ethers.Contract(rule.ethToken, erc20Abi, ethersProvider);
+            const ethTokenSymbol = await erc20Contract.symbol();
+            if (ethTokenSymbol != rule.ethTokenSymbol) {
+                throw new Error(`Invalid eth token symbol ${ethTokenSymbol} != ${rule.ethTokenSymbol}`);
+            }
+            const ethTokenDecimals = await erc20Contract.decimals();
+            if (ethTokenDecimals != rule.ethTokenDecimals) {
+                throw new Error(`Invalid eth token decimals ${ethTokenDecimals} != ${rule.ethTokenDecimals}`);
+            }
+
+            const fungibleToken = new FungibleToken(nearAccount, rule.incentivizationToken);
+            const metaData = await fungibleToken.getMetaData();
+            if (metaData.symbol != rule.incentivizationTokenSymbol) {
+                throw new Error(`Invalid incentivization token symbol ${metaData.symbol} != ${rule.incentivizationTokenSymbol}`);
+            }
+            if (metaData.decimals != rule.incentivizationTokenDecimals) {
+                throw new Error(`Invalid incentivization token decimals ${metaData.decimals} != ${rule.incentivizationTokenDecimals}`);
+            }
+        }
+    }
+
+    async getAmountToTransfer(rule: Partial<IRule>, eventAmount: BN): Promise<BN> {
+        const lockedTokenAmount = Number (formatTokenAmount (eventAmount.toString(), rule.ethTokenDecimals));
         const bridgeTokenPrice = await this.priceSource.getPrice(rule.ethTokenSymbol, rule.fiatSymbol);
         const incentivizationTokenPrice = await this.priceSource.getPrice(rule.incentivizationTokenSymbol, rule.fiatSymbol);
         const amountBridgeTokenFiat = lockedTokenAmount * bridgeTokenPrice;
         const amountIncentivizationFiat = amountBridgeTokenFiat * rule.incentivizationFactor;
-        const tokenAmount = String((amountIncentivizationFiat / incentivizationTokenPrice).toFixed(decimals));
+        const tokenAmount = String((amountIncentivizationFiat / incentivizationTokenPrice).toFixed(rule.incentivizationTokenDecimals));
 
-        const res = new BN(parseTokenAmount(tokenAmount, decimals));
+        const res = new BN(parseTokenAmount(tokenAmount, rule.incentivizationTokenDecimals));
         if (rule.incentivizationBaseAmount > 0) {
-            res.iadd(new BN(parseTokenAmount(String(rule.incentivizationBaseAmount), decimals)));
+            res.iadd(new BN(parseTokenAmount(String(rule.incentivizationBaseAmount), rule.incentivizationTokenDecimals)));
         }
         return res;
     }
@@ -76,15 +97,14 @@ export class Incentivizer {
     }
 
     async incentivizeByRule(lockEvent: LockEvent, rule: IRule, contract: FungibleToken): Promise<boolean> {
-        const decimals = (await contract.getMetaData()).decimals;
-        let amountToTransfer = await this.getAmountToTransfer(rule, new BN(lockEvent.amount), decimals);
+        let amountToTransfer = await this.getAmountToTransfer(rule, new BN(lockEvent.amount));
         const accountTokenBalance = new BN(await contract.balanceOf(this.nearAccount.accountId));
         if (amountToTransfer.lten(0)) {
             return false;
         }
 
         const totalSpent = getTotalTokensSpent(rule.uuid, rule.ethToken, rule.incentivizationToken);
-        const totalCap = new BN (formatTokenAmount (rule.incentivizationTotalCap.toString(), decimals));
+        const totalCap = new BN (formatTokenAmount (rule.incentivizationTotalCap.toString(), rule.incentivizationTokenDecimals));
         if (totalSpent.gte(totalCap)){
             console.log(`The total cap ${totalCap} was exhausted`);
             return false;

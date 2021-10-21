@@ -104,8 +104,9 @@ class RelayerApp {
 
         let currentBlockNumber = blockNumber > 0 ? blockNumber - 1 : 0;
 
+        await Incentivizer.validateRules(incentivizationConfig.rules, relayerNearAccount, ethersProvider);
         const incentivizer = new Incentivizer(relayerNearAccount);
-        incentivizer.init(incentivizationConfig.rules);
+        incentivizer.addRules(incentivizationConfig.rules);
 
         if (relayerConfig.relayEthConnectorEvents) {
             this.relayEvents.push(new EthEventRelayer(relayerNearAccount, ethersProvider, httpPrometheus, dogstatsd, incentivizer));

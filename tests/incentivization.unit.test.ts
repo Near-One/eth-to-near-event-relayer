@@ -21,48 +21,52 @@ dotenv.config({ path: "tests/.env" });
         when(mockedPriceSource.getPrice("FX","USDT")).thenResolve(1.5);
         when(mockedPriceSource.getPrice("LINK", "USDT")).thenResolve(3);
         const rule = {ethTokenSymbol:"FX",
+            ethTokenDecimals: 18,
             incentivizationTokenSymbol:"LINK",
+            incentivizationTokenDecimals: 18,
             incentivizationFactor:0.001,
+            incentivizationBaseAmount: 0,
             fiatSymbol: "USDT"
         };
 
-        let decimals = 18;
+        rule.ethTokenDecimals = rule.incentivizationTokenDecimals = 18;
         const incentivizer = new Incentivizer(instance(mock(Account)), instance(mockedPriceSource));
-        incentivizer.init(testConfig.rules);
-        let result = await incentivizer.getAmountToTransfer(rule, new BN("3".padEnd(decimals, '0')), decimals);
+        incentivizer.addRules(testConfig.rules);
+        let result = await incentivizer.getAmountToTransfer(rule, new BN("3".padEnd(18, '0')));
         expect(result.toString()).to.be.equal("15".padEnd(15, '0'));
 
-        decimals = 10
-        result = await incentivizer.getAmountToTransfer(rule, new BN("55000000000000"), decimals);
+        rule.ethTokenDecimals = rule.incentivizationTokenDecimals  = 10;
+        result = await incentivizer.getAmountToTransfer(rule, new BN("55000000000000"));
         expect(result.toString()).to.be.equal("275".padEnd(11, '0'));
 
-        decimals = 0;
-        result = await incentivizer.getAmountToTransfer(rule, new BN("5000"), decimals);
+        rule.ethTokenDecimals = rule.incentivizationTokenDecimals  = 0;
+        result = await incentivizer.getAmountToTransfer(rule, new BN("5000"));
         expect(result.toString()).to.be.equal("3");
 
-        result = await incentivizer.getAmountToTransfer(rule, new BN("3000"), decimals);
+        result = await incentivizer.getAmountToTransfer(rule, new BN("3000"));
         expect(result.toString()).to.be.equal("2");
 
-        result = await incentivizer.getAmountToTransfer(rule, new BN("1000"), decimals);
+        result = await incentivizer.getAmountToTransfer(rule, new BN("1000"));
         expect(result.toString()).to.be.equal("1");
 
-        result = await incentivizer.getAmountToTransfer(rule, new BN("100"), decimals);
+        result = await incentivizer.getAmountToTransfer(rule, new BN("100"));
         expect(result.toString() === "0");
 
-        decimals = 2;
-        result = await incentivizer.getAmountToTransfer(rule, new BN("10000"), decimals);
+        rule.ethTokenDecimals = rule.incentivizationTokenDecimals  = 2;
+        result = await incentivizer.getAmountToTransfer(rule, new BN("10000"));
         expect(result.toString()).to.be.equal("5");
     }
 
     @test async getAmountToTransferTestBinance() {
         const decimals = 0;
         const incentivizer = new Incentivizer(instance(mock(Account)), new BinancePriceSource());
-        incentivizer.init([]);
+        incentivizer.addRules([]);
         const result = await incentivizer.getAmountToTransfer({ethTokenSymbol:"DAI",
             incentivizationTokenSymbol:"LINK",
             incentivizationFactor:0.001,
+            incentivizationBaseAmount: 0,
             fiatSymbol: "USDT"
-        }, new BN("30000".padEnd(decimals, '0')), decimals);
+        }, new BN("30000".padEnd(decimals, '0')));
 
         expect(result.toString()).to.not.be.empty;
     }
@@ -87,7 +91,7 @@ dotenv.config({ path: "tests/.env" });
         when(mockedPriceSource.getPrice("FAU", "USDT")).thenResolve(1.5);
         when(mockedPriceSource.getPrice("eFAU","USDT")).thenResolve(2);
         const incentivizer = new Incentivizer(relayerNearAccount, instance(mockedPriceSource));
-        incentivizer.init(testConfig.rules);
+        incentivizer.addRules(testConfig.rules);
         const rule = testConfig.rules[0];
         return await incentivizer.incentivize({
             contractAddress: rule.ethToken,
@@ -127,7 +131,7 @@ dotenv.config({ path: "tests/.env" });
         const mockedPriceSource:BinancePriceSource = mock(BinancePriceSource);
         when(mockedPriceSource.getPrice(anything(), anything())).thenResolve(1.5);
         const incentivizer = new Incentivizer(instance(mock(Account)), instance(mockedPriceSource));
-        incentivizer.init(testConfig.rules);
+        incentivizer.addRules(testConfig.rules);
 
         const lockEvent = {
             contractAddress: rule.ethToken,

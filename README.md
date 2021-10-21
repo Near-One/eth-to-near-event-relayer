@@ -27,7 +27,9 @@ and `/Users/<user>/.near-credentials` on MacOS: <br/>
         "uuid": "f2093ebf-5386-4ede-99c7-3006c8f3b3d8" // Universally unique identifier of the incentivization programm
         "fiatSymbol": "USDT",
         "ethTokenSymbol": "DAI",
+        "ethTokenDecimals": 18,
         "incentivizationTokenSymbol": "LINK",
+        "incentivizationTokenDecimals": 18,
         "ethToken": "0x6B175474E89094C44Da98b954EedeAC495271d0F", // DAI
         "bridgedToken": "6B175474E89094C44Da98b954EedeAC495271d0F.factory.bridge.near", // nDAI
         "incentivizationToken": "514910771af9ca656af840dff83e8264ecf986ca.factory.bridge.near", // nLINK

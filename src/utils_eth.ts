@@ -80,3 +80,9 @@ export function getLockEvent(eventLog: Event, receipt: TransactionReceipt): Lock
     lockEvent.txHash = receipt.transactionHash;
     return lockEvent;
 }
+
+
+export const erc20Abi = [
+    "function symbol() view returns (string)",
+    "function decimals() view returns (uint8)"
+];
