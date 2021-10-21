@@ -5,7 +5,7 @@ import * as ethers from 'ethers';
 import * as utils from 'ethereumjs-util';
 import {serialize as serializeBorsh} from 'near-api-js/lib/utils/serialize';
 import {promises as fs} from "fs"
-import {ConnectorType, RetrieveReceiptsMode} from './types';
+import {ConnectorType} from './types';
 import Path = require('path');
 import {TreeBuilder} from "./eth_proof_tree_builder";
 

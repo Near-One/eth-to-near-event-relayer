@@ -15,5 +15,5 @@
   "relayERC20Events": true,
   "relayENearEvents": true,
   "relayOnlyAuroraEvents": false,
-  "retrieveReceiptsMode": "Batch"
+  "retrieveReceiptsMode": "batch"
 }

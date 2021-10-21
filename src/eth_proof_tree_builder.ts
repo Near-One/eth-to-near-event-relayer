@@ -3,7 +3,6 @@ import {IBlockTransactionString, IReceipt, RetrieveReceiptsMode} from "./types";
 import {encode} from 'eth-util-lite';
 import {BaseTrie as Tree} from "merkle-patricia-tree";
 import {promises as fs} from "fs";
-import Web3 from "web3";
 import {Receipt} from 'eth-object';
 
 export class TreeBuilder {
@@ -13,10 +12,11 @@ export class TreeBuilder {
     constructor(provider: ethers.providers.JsonRpcProvider, mode: RetrieveReceiptsMode) {
         this.ethersProvider = provider;
         switch (mode){
-            case RetrieveReceiptsMode.Batch:
+            case RetrieveReceiptsMode.batch:
                 this.getReceipts = this.getReceiptsForBlockBatch;
+                this.ethersProvider = new ethers.providers.JsonRpcBatchProvider(provider.connection.url);
                 break;
-            case RetrieveReceiptsMode.Parity:
+            case RetrieveReceiptsMode.parity:
                 this.getReceipts = this.getReceiptsForBlockParity;
                 break;
             default:
@@ -67,29 +67,19 @@ export class TreeBuilder {
     }
 
     private async getReceiptsForBlockBatch(block: IBlockTransactionString): Promise<Array<IReceipt>>{
-        const web3: any = new Web3(this.ethersProvider.connection.url);
-        const batch = new web3.BatchRequest();
         const promises = block.transactions.map(tx => {
-            return new Promise((resolve, reject) => {
-                const req = web3.eth.getTransactionReceipt.request(tx, (err: any, data: any) => {
-                        if (err) reject(err);
-                        else resolve(data);
-                    },
-                );
-                batch.add(req);
-            });
+            return this.ethersProvider.getTransactionReceipt(tx);
         });
 
-        batch.execute();
         const receipts = await Promise.all(promises);
-        return receipts.map((txReceipt: any) => {
+        return receipts.map((txReceipt) => {
             const receipt: IReceipt = {
                 transactionIndex: txReceipt.transactionIndex,
                 logs: txReceipt.logs,
                 logsBloom: txReceipt.logsBloom,
-                cumulativeGasUsed: Number(txReceipt.cumulativeGasUsed),
-                status: Number(txReceipt.status),
-                type: Number(txReceipt.type)
+                cumulativeGasUsed: txReceipt.cumulativeGasUsed.toNumber(),
+                status: txReceipt.status,
+                type: txReceipt.type
             };
 
             return receipt;

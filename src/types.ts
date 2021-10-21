@@ -7,9 +7,9 @@ export enum ConnectorType {
 }
 
 export enum RetrieveReceiptsMode {
-    Default,
-    Batch,
-    Parity
+    default,
+    batch,
+    parity
 }
 
 export interface IReceipt {
