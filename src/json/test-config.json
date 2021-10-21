@@ -15,9 +15,9 @@
   "relayERC20Events": true,
   "relayENearEvents": false,
   "relayOnlyAuroraEvents": false,
-  "keyStorePath": "/Users/karim/.near-credentials",
   "rules": [
     {
+      "uuid": "f2093ebf-5386-4ede-99c7-3006c8f3b3d8",
       "fiatSymbol": "USDT",
       "ethTokenSymbol": "FAU",
       "incentivizationTokenSymbol": "eFAU",

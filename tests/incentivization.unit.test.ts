@@ -11,14 +11,15 @@ import BN from "bn.js";
 import * as dbManager from "../src/db_manager";
 import {getTotalTokensSpent} from "../src/db_manager";
 import * as fs from "fs";
-
+import * as dotenv from "dotenv";
+dotenv.config({ path: "tests/.env" });
 
 @suite class IncentivizationUnitTests { // eslint-disable-line @typescript-eslint/no-unused-vars
     @test async getAmountToTransferTest() {
         const mockedPriceSource:BinancePriceSource = mock(BinancePriceSource);
-        when(mockedPriceSource.getPrice("DAI","USDT")).thenResolve(1.5);
+        when(mockedPriceSource.getPrice("FX","USDT")).thenResolve(1.5);
         when(mockedPriceSource.getPrice("LINK", "USDT")).thenResolve(3);
-        const rule = {ethTokenSymbol:"DAI",
+        const rule = {ethTokenSymbol:"FX",
             incentivizationTokenSymbol:"LINK",
             incentivizationFactor:0.001,
             fiatSymbol: "USDT"
@@ -70,7 +71,7 @@ import * as fs from "fs";
     }
 
     async incentivizeTest(amount: string): Promise<boolean>{
-        const keyStore = new nearAPI.keyStores.UnencryptedFileSystemKeyStore(testConfig.keyStorePath);
+        const keyStore = new nearAPI.keyStores.UnencryptedFileSystemKeyStore(process.env.NEAR_KEY_STORE_PATH);
         const near = await nearAPI.connect({
             deps: {
                 keyStore,
@@ -124,30 +125,30 @@ import * as fs from "fs";
             txHash: ""
         };
 
-        let totalSpentBefore = getTotalTokensSpent(rule.ethToken, rule.incentivizationToken);
+        let totalSpentBefore = getTotalTokensSpent(rule.uuid, rule.ethToken, rule.incentivizationToken);
         lockEvent.amount = "1";
         let res = await incentivizer.incentivizeByRule(lockEvent, rule, instance(mockedContract));
         expect(res).to.be.false;
-        let totalSpentAfter = getTotalTokensSpent(rule.ethToken, rule.incentivizationToken);
+        let totalSpentAfter = getTotalTokensSpent(rule.uuid, rule.ethToken, rule.incentivizationToken);
         expect(totalSpentAfter.toString()).to.be.equal(totalSpentBefore.toString());
 
         lockEvent.amount = "10000";
         res = await incentivizer.incentivizeByRule(lockEvent, rule, instance(mockedContract));
         expect(res).to.be.true;
         totalSpentBefore = totalSpentAfter;
-        totalSpentAfter = getTotalTokensSpent(rule.ethToken, rule.incentivizationToken);
+        totalSpentAfter = getTotalTokensSpent(rule.uuid, rule.ethToken, rule.incentivizationToken);
         expect(totalSpentAfter.toString()).to.be.equal(totalSpentBefore.add(new BN("10")).toString());
 
         rule.incentivizationTotalCap = 10;
         res = await incentivizer.incentivizeByRule(lockEvent, rule, instance(mockedContract));
         expect(res).to.be.false;
         totalSpentBefore = totalSpentAfter;
-        totalSpentAfter = getTotalTokensSpent(rule.ethToken, rule.incentivizationToken);
+        totalSpentAfter = getTotalTokensSpent(rule.uuid, rule.ethToken, rule.incentivizationToken);
         expect(totalSpentAfter.toString()).to.be.equal(totalSpentBefore.toString());
     }
 
     async before() {
-        const dbFile = ".loki_db_test.json";
+        const dbFile = ".relayer_db_test.json";
         try {
             fs.unlinkSync(dbFile)
         } catch(err) {

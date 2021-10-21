@@ -57,6 +57,7 @@ export class IncentivizationContract {
 }
 
 interface IRule {
+    uuid: string,
     fiatSymbol: string,
     ethTokenSymbol: string,
     incentivizationTokenSymbol: string,
@@ -68,14 +69,20 @@ interface IRule {
 }
 
 export class Incentivizer {
-    private rules = new Map<string, IRule>();
+    private rulesByEthToken = new Map<string, IRule[]>();
     private readonly nearAccount: Account;
     private priceSource: IPriceSource;
 
     constructor(nearAccount: Account, rules: IRule[], priceSource: IPriceSource = new BinancePriceSource()) {
         this.nearAccount = nearAccount;
         for (const configRule of rules) {
-            this.rules.set(configRule.ethToken, configRule);
+            let arrayOfRules = this.rulesByEthToken.get(configRule.ethToken);
+            if (arrayOfRules == null) {
+                arrayOfRules = [];
+                this.rulesByEthToken.set(configRule.ethToken, arrayOfRules);
+            }
+
+            arrayOfRules.push(configRule);
         }
 
         this.priceSource = priceSource;
@@ -84,8 +91,8 @@ export class Incentivizer {
     async getAmountToTransfer(rule: {ethTokenSymbol: string,
                                      incentivizationTokenSymbol: string,
                                      incentivizationFactor: number,
-                                     fiatSymbol: string}, eventAmount: BN,
-                                     decimals: number): Promise<BN>{
+                                     fiatSymbol: string},
+                                     eventAmount: BN, decimals: number): Promise<BN> {
         const lockedTokenAmount = Number (formatTokenAmount (eventAmount.toString(), decimals));
         const bridgeTokenPrice = await this.priceSource.getPrice(rule.ethTokenSymbol, rule.fiatSymbol);
         const incentivizationTokenPrice = await this.priceSource.getPrice(rule.incentivizationTokenSymbol, rule.fiatSymbol);
@@ -95,29 +102,29 @@ export class Incentivizer {
         return new BN(parseTokenAmount(tokenAmount, decimals));
     }
 
-    async incentivize (lockEvent: LockEvent): Promise<boolean> {
-        const rule = this.rules.get(lockEvent.contractAddress.toLowerCase());
-        if (rule == null) {
+    async incentivize(lockEvent: LockEvent): Promise<boolean> {
+        const rules = this.rulesByEthToken.get(lockEvent.contractAddress.toLowerCase());
+        if (rules == null || rules.length == 0 || lockEvent.accountId == this.nearAccount.accountId) {
             return false;
         }
 
-        if (lockEvent.accountId == this.nearAccount.accountId) {
-            return false;
+        for (const rule of rules) {
+            const contract = new IncentivizationContract(this.nearAccount, rule.incentivizationToken);
+            await this.incentivizeByRule (lockEvent, rule, contract);
         }
 
-        const contract = new IncentivizationContract(this.nearAccount, rule.incentivizationToken);
-        return this.incentivizeByRule (lockEvent, rule, contract);
+        return true;
     }
 
     async incentivizeByRule(lockEvent: LockEvent, rule: IRule, contract: IncentivizationContract): Promise<boolean> {
         const decimals = await contract.getDecimals();
         let amountToTransfer = await this.getAmountToTransfer(rule, new BN(lockEvent.amount), decimals);
-        const accountBalance = new BN(await contract.balanceOf(this.nearAccount.accountId));
+        const accountTokenBalance = new BN(await contract.balanceOf(this.nearAccount.accountId));
         if (amountToTransfer.lten(0)) {
             return false;
         }
 
-        const totalSpent = getTotalTokensSpent(rule.ethToken, rule.incentivizationToken);
+        const totalSpent = getTotalTokensSpent(rule.uuid, rule.ethToken, rule.incentivizationToken);
         const totalCap = new BN (formatTokenAmount (rule.incentivizationTotalCap.toString(), decimals));
         if (totalSpent.gte(totalCap)){
             console.log(`The total cap ${totalCap} was exhausted`);
@@ -129,8 +136,8 @@ export class Incentivizer {
             amountToTransfer = remainingCap;
         }
 
-        if (accountBalance.lt(amountToTransfer)) {
-            console.log(`The account ${this.nearAccount.accountId} has balance ${accountBalance} which is not enough to transfer ${amountToTransfer} 
+        if (accountTokenBalance.lt(amountToTransfer)) {
+            console.log(`The account ${this.nearAccount.accountId} has balance ${accountTokenBalance} which is not enough to transfer ${amountToTransfer} 
                             ${rule.incentivizationToken} tokens`);
             return false;
         }
@@ -139,7 +146,8 @@ export class Incentivizer {
         await contract.registerReceiverIfNeeded(lockEvent.accountId, gasLimit);
         console.log(`Reward the account ${lockEvent.accountId} with ${amountToTransfer} of token ${rule.incentivizationToken}`);
         const res = await contract.transfer(lockEvent.accountId, amountToTransfer.toString(), gasLimit, new BN('1'));
-        incentivizationCol().insert({ethTokenAddress: rule.ethToken,
+        incentivizationCol().insert({uuid: rule.uuid,
+            ethTokenAddress: rule.ethToken,
             incentivizationTokenAddress: rule.incentivizationToken,
             accountId: lockEvent.accountId,
             txHash: res.transaction.hash,
