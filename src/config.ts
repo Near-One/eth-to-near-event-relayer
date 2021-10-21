@@ -23,9 +23,11 @@ export interface IConfig {
 }
 
 export let relayerConfig: IConfig;
+export let currentNetwork: string;
 
 export function initConfig(networkOrPath: string): void {
-    relayerConfig = getConfigByNetwork(networkOrPath != null ? networkOrPath : "goerli");
+    currentNetwork = networkOrPath != null ? networkOrPath : "goerli";
+    relayerConfig = getConfigByNetwork(currentNetwork);
 }
 
 function getConfigByNetwork(networkOrPath: string): IConfig {
