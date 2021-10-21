@@ -4,52 +4,7 @@ import {IPriceSource, BinancePriceSource} from './price_source'
 import BN from "bn.js";
 import {formatTokenAmount, parseTokenAmount} from "./utils_near";
 import {getTotalTokensSpent, incentivizationCol} from './db_manager';
-
-export class IncentivizationContract {
-    private readonly address: string;
-    private readonly account: Account;
-
-    constructor(nearAccount: Account, contractAddress: string) {
-        this.address = contractAddress;
-        this.account = nearAccount;
-    }
-
-    async getDecimals(): Promise<number> {
-        return (await this.account.viewFunction(this.address,'ft_metadata')).decimals;
-    }
-
-    async transfer(receiver_id: string, amount: string, gas_limit: BN, payment_for_storage: BN) { // eslint-disable-line @typescript-eslint/explicit-module-boundary-types
-        return this.account.functionCall({
-            contractId: this.address,
-            methodName: "ft_transfer",
-            args: {receiver_id: receiver_id, amount: amount},
-            gas: gas_limit,
-            attachedDeposit: payment_for_storage
-        });
-    }
-
-    async balanceOf(accountId: string): Promise<string> {
-        return await this.account.viewFunction(this.address,'ft_balance_of', {account_id: accountId});
-    }
-
-    async registerReceiverIfNeeded(accountId: string, gasLimit: BN): Promise<void> {
-        const storageBounds = await this.account.viewFunction(this.address,'storage_balance_bounds');
-        const currentStorageBalance = await this.account.viewFunction(this.address,'storage_balance_of', {account_id: accountId});
-        const storageMinimumBalance = storageBounds != null ? new BN(storageBounds.min) : new BN(0);
-        const storageCurrentBalance = currentStorageBalance != null ? new BN(currentStorageBalance.total) : new BN(0);
-
-        if (storageCurrentBalance < storageMinimumBalance) {
-            console.log(`Registering ${accountId}`);
-            await this.account.functionCall({
-                contractId: this.address,
-                methodName: "storage_deposit",
-                args: {account_id: accountId, registration_only: true},
-                gas: gasLimit,
-                attachedDeposit: storageMinimumBalance
-            });
-        }
-    }
-}
+import {FungibleToken} from "./fungible_token";
 
 interface IRule {
     uuid: string,
@@ -68,8 +23,12 @@ export class Incentivizer {
     private readonly nearAccount: Account;
     private priceSource: IPriceSource;
 
-    constructor(nearAccount: Account, rules: IRule[], priceSource: IPriceSource = new BinancePriceSource()) {
+    constructor(nearAccount: Account, priceSource: IPriceSource = new BinancePriceSource()) {
         this.nearAccount = nearAccount;
+        this.priceSource = priceSource;
+    }
+
+    init(rules: IRule[]): void {
         for (const configRule of rules) {
             let arrayOfRules = this.rulesByEthToken.get(configRule.ethToken);
             if (arrayOfRules == null) {
@@ -79,8 +38,6 @@ export class Incentivizer {
 
             arrayOfRules.push(configRule);
         }
-
-        this.priceSource = priceSource;
     }
 
     async getAmountToTransfer(rule: {ethTokenSymbol: string,
@@ -104,15 +61,15 @@ export class Incentivizer {
         }
 
         for (const rule of rules) {
-            const contract = new IncentivizationContract(this.nearAccount, rule.incentivizationToken);
+            const contract = new FungibleToken(this.nearAccount, rule.incentivizationToken);
             await this.incentivizeByRule (lockEvent, rule, contract);
         }
 
         return true;
     }
 
-    async incentivizeByRule(lockEvent: LockEvent, rule: IRule, contract: IncentivizationContract): Promise<boolean> {
-        const decimals = await contract.getDecimals();
+    async incentivizeByRule(lockEvent: LockEvent, rule: IRule, contract: FungibleToken): Promise<boolean> {
+        const decimals = (await contract.getMetaData()).decimals;
         let amountToTransfer = await this.getAmountToTransfer(rule, new BN(lockEvent.amount), decimals);
         const accountTokenBalance = new BN(await contract.balanceOf(this.nearAccount.accountId));
         if (amountToTransfer.lten(0)) {

@@ -11,6 +11,8 @@ import relayerConfig from './json/relayer-config.json';
 import * as nearAPI from 'near-api-js';
 import yargs from 'yargs';
 import * as dbManager from './db_manager'
+import {Incentivizer} from "./incentivizer";
+import incentivizationConfig from "./json/incentivization-config.json";
 
 dotenv.config();
 
@@ -102,16 +104,19 @@ class RelayerApp {
 
         let currentBlockNumber = blockNumber > 0 ? blockNumber - 1 : 0;
 
+        const incentivizer = new Incentivizer(relayerNearAccount);
+        incentivizer.init(incentivizationConfig.rules);
+
         if (relayerConfig.relayEthConnectorEvents) {
-            this.relayEvents.push(new EthEventRelayer(relayerNearAccount, ethersProvider, httpPrometheus, dogstatsd));
+            this.relayEvents.push(new EthEventRelayer(relayerNearAccount, ethersProvider, httpPrometheus, dogstatsd, incentivizer));
         }
 
         if (relayerConfig.relayERC20Events) {
-            this.relayEvents.push(new ERC20EventRelayer(relayerNearAccount, ethersProvider, httpPrometheus, dogstatsd));
+            this.relayEvents.push(new ERC20EventRelayer(relayerNearAccount, ethersProvider, httpPrometheus, dogstatsd, incentivizer));
         }
 
         if (relayerConfig.relayENearEvents) {
-            this.relayEvents.push(new ENearEventRelayer(relayerNearAccount, ethersProvider, httpPrometheus, dogstatsd));
+            this.relayEvents.push(new ENearEventRelayer(relayerNearAccount, ethersProvider, httpPrometheus, dogstatsd, incentivizer));
         }
 
         while (!this.isShouldClose) {

@@ -1,7 +1,7 @@
 import {suite, test} from '@testdeck/mocha';
 import {expect} from 'chai';
 import {anything, instance, mock, when} from 'ts-mockito';
-import {IncentivizationContract, Incentivizer} from '../src/incentivizer';
+import {Incentivizer} from '../src/incentivizer';
 import {BinancePriceSource} from '../src/price_source'
 import * as nearAPI from "near-api-js";
 import {Account} from "near-api-js";
@@ -12,6 +12,7 @@ import * as dbManager from "../src/db_manager";
 import {getTotalTokensSpent} from "../src/db_manager";
 import * as fs from "fs";
 import * as dotenv from "dotenv";
+import {FungibleToken} from "../src/fungible_token";
 dotenv.config({ path: "tests/.env" });
 
 @suite class IncentivizationUnitTests { // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -26,7 +27,8 @@ dotenv.config({ path: "tests/.env" });
         };
 
         let decimals = 18;
-        const incentivizer = new Incentivizer(instance(mock(Account)), testConfig.rules, instance(mockedPriceSource));
+        const incentivizer = new Incentivizer(instance(mock(Account)), instance(mockedPriceSource));
+        incentivizer.init(testConfig.rules);
         let result = await incentivizer.getAmountToTransfer(rule, new BN("3".padEnd(decimals, '0')), decimals);
         expect(result.toString()).to.be.equal("15".padEnd(15, '0'));
 
@@ -54,7 +56,8 @@ dotenv.config({ path: "tests/.env" });
 
     @test async getAmountToTransferTestBinance() {
         const decimals = 0;
-        const incentivizer = new Incentivizer(instance(mock(Account)), [], new BinancePriceSource());
+        const incentivizer = new Incentivizer(instance(mock(Account)), new BinancePriceSource());
+        incentivizer.init([]);
         const result = await incentivizer.getAmountToTransfer({ethTokenSymbol:"DAI",
             incentivizationTokenSymbol:"LINK",
             incentivizationFactor:0.001,
@@ -83,7 +86,8 @@ dotenv.config({ path: "tests/.env" });
         const mockedPriceSource:BinancePriceSource = mock(BinancePriceSource);
         when(mockedPriceSource.getPrice("FAU", "USDT")).thenResolve(1.5);
         when(mockedPriceSource.getPrice("eFAU","USDT")).thenResolve(2);
-        const incentivizer = new Incentivizer(relayerNearAccount, testConfig.rules, instance(mockedPriceSource));
+        const incentivizer = new Incentivizer(relayerNearAccount, instance(mockedPriceSource));
+        incentivizer.init(testConfig.rules);
         const rule = testConfig.rules[0];
         return await incentivizer.incentivize({
             contractAddress: rule.ethToken,
@@ -104,18 +108,26 @@ dotenv.config({ path: "tests/.env" });
 
     @test async testIncentivizeTotalCap(){
         const rule = Object.assign({}, testConfig.rules[0]);
-        const mockedContract:IncentivizationContract = mock(IncentivizationContract);
+        const mockedContract:FungibleToken = mock(FungibleToken);
         when(mockedContract.transfer(anything(),anything(),anything(),anything())).thenResolve({
             status: null,
             transaction: {hash: "testHASH"},
             transaction_outcome: null,
             receipts_outcome: null
         });
-        when(mockedContract.getDecimals()).thenResolve(0);
+        when(mockedContract.getMetaData()).thenResolve({
+            icon: null,
+            name: "",
+            reference: null,
+            reference_hash: null,
+            spec: "",
+            symbol: "",
+            decimals: 0});
         when(mockedContract.balanceOf(anything())).thenResolve("1000000");
         const mockedPriceSource:BinancePriceSource = mock(BinancePriceSource);
         when(mockedPriceSource.getPrice(anything(), anything())).thenResolve(1.5);
-        const incentivizer = new Incentivizer(instance(mock(Account)), testConfig.rules, instance(mockedPriceSource));
+        const incentivizer = new Incentivizer(instance(mock(Account)), instance(mockedPriceSource));
+        incentivizer.init(testConfig.rules);
 
         const lockEvent = {
             contractAddress: rule.ethToken,
