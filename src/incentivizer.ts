@@ -1,4 +1,4 @@
-import {Account, Contract} from "near-api-js";
+import {Account} from "near-api-js";
 import {LockEvent} from './utils_eth';
 import {IPriceSource, BinancePriceSource} from './price_source'
 import BN from "bn.js";
@@ -6,27 +6,20 @@ import {formatTokenAmount, parseTokenAmount} from "./utils_near";
 import {getTotalTokensSpent, incentivizationCol} from './db_manager';
 
 export class IncentivizationContract {
-    private contract: Contract;
     private readonly address: string;
+    private readonly account: Account;
 
     constructor(nearAccount: Account, contractAddress: string) {
         this.address = contractAddress;
-        this.contract = new Contract(
-            nearAccount,
-            contractAddress,
-            {
-                changeMethods: ['ft_transfer', 'storage_deposit'],
-                viewMethods: ['storage_balance_bounds', 'storage_balance_of', 'ft_balance_of', `ft_metadata`]
-            }
-        );
+        this.account = nearAccount;
     }
 
     async getDecimals(): Promise<number> {
-        return (await (this.contract as any).ft_metadata()).decimals;
+        return (await this.account.viewFunction(this.address,'ft_metadata')).decimals;
     }
 
     async transfer(receiver_id: string, amount: string, gas_limit: BN, payment_for_storage: BN) { // eslint-disable-line @typescript-eslint/explicit-module-boundary-types
-        return this.contract.account.functionCall({
+        return this.account.functionCall({
             contractId: this.address,
             methodName: "ft_transfer",
             args: {receiver_id: receiver_id, amount: amount},
@@ -36,21 +29,23 @@ export class IncentivizationContract {
     }
 
     async balanceOf(accountId: string): Promise<string> {
-        return (this.contract as any).ft_balance_of({account_id: accountId});
+        return await this.account.viewFunction(this.address,'ft_balance_of', {account_id: accountId});
     }
 
     async registerReceiverIfNeeded(accountId: string, gasLimit: BN): Promise<void> {
-        const storageBounds = await (this.contract as any).storage_balance_bounds();
-        const currentStorageBalance = await (this.contract as any).storage_balance_of({account_id: accountId});
+        const storageBounds = await this.account.viewFunction(this.address,'storage_balance_bounds');
+        const currentStorageBalance = await this.account.viewFunction(this.address,'storage_balance_of', {account_id: accountId});
         const storageMinimumBalance = storageBounds != null ? new BN(storageBounds.min) : new BN(0);
         const storageCurrentBalance = currentStorageBalance != null ? new BN(currentStorageBalance.total) : new BN(0);
 
         if (storageCurrentBalance < storageMinimumBalance) {
             console.log(`Registering ${accountId}`);
-            await (this.contract as any).storage_deposit({
+            await this.account.functionCall({
+                contractId: this.address,
+                methodName: "storage_deposit",
                 args: {account_id: accountId, registration_only: true},
                 gas: gasLimit,
-                amount: storageMinimumBalance
+                attachedDeposit: storageMinimumBalance
             });
         }
     }

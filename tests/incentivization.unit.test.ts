@@ -5,7 +5,7 @@ import {IncentivizationContract, Incentivizer} from '../src/incentivizer';
 import {BinancePriceSource} from '../src/price_source'
 import * as nearAPI from "near-api-js";
 import {Account} from "near-api-js";
-import testConfig from "../src/json/test-config.json";
+import testConfig from "./test-config.json";
 import {parseTokenAmount} from "../src/utils_near";
 import BN from "bn.js";
 import * as dbManager from "../src/db_manager";
