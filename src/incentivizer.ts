@@ -16,6 +16,7 @@ interface IRule {
     incentivizationToken: string,
     incentivizationFactor: number,
     incentivizationTotalCap: number,
+    incentivizationBaseAmount: number
 }
 
 export class Incentivizer {
@@ -43,6 +44,7 @@ export class Incentivizer {
     async getAmountToTransfer(rule: {ethTokenSymbol: string,
                                      incentivizationTokenSymbol: string,
                                      incentivizationFactor: number,
+                                     incentivizationBaseAmount: number,
                                      fiatSymbol: string},
                                      eventAmount: BN, decimals: number): Promise<BN> {
         const lockedTokenAmount = Number (formatTokenAmount (eventAmount.toString(), decimals));
@@ -51,7 +53,12 @@ export class Incentivizer {
         const amountBridgeTokenFiat = lockedTokenAmount * bridgeTokenPrice;
         const amountIncentivizationFiat = amountBridgeTokenFiat * rule.incentivizationFactor;
         const tokenAmount = String((amountIncentivizationFiat / incentivizationTokenPrice).toFixed(decimals));
-        return new BN(parseTokenAmount(tokenAmount, decimals));
+
+        const res = new BN(parseTokenAmount(tokenAmount, decimals));
+        if (rule.incentivizationBaseAmount > 0) {
+            res.iadd(new BN(parseTokenAmount(String(rule.incentivizationBaseAmount), decimals)));
+        }
+        return res;
     }
 
     async incentivize(lockEvent: LockEvent): Promise<boolean> {

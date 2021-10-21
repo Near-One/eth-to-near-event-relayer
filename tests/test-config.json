@@ -27,7 +27,8 @@
       "incentivizationFactor": 0.001,
       "incentivizationTotalCap": 10000,
       "amountForTest": "1",
-      "receiverAccountIdForTest": "karim-dev5.testnet"
+      "receiverAccountIdForTest": "karim-dev5.testnet",
+      "incentivizationBaseAmount": 0
     }
   ]
 }
