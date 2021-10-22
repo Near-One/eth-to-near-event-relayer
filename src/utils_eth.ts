@@ -7,6 +7,7 @@ import {ConnectorType} from './types';
 import ethCustodianAbi from './json/eth-custodian-abi.json';
 import erc20LockerAbi from './json/erc20-locker-abi.json';
 import eNearAbi from './json/eth-near-abi.json';
+import {TransactionReceipt} from "@ethersproject/abstract-provider";
 
 function getConnectorABI(connectorType: ConnectorType): ContractInterface {
     if (connectorType === ConnectorType.ethCustodian) {
@@ -63,9 +64,10 @@ export class LockEvent {
     sender: string;
     amount: string;
     accountId: string;
+    txHash: string;
 }
 
-export function getLockEvent(eventLog: Event): LockEvent {
+export function getLockEvent(eventLog: Event, receipt: TransactionReceipt): LockEvent {
     if (eventLog.args.length < 4) {
         return null;
     }
@@ -75,5 +77,12 @@ export function getLockEvent(eventLog: Event): LockEvent {
     lockEvent.sender = eventLog.args[1];
     lockEvent.amount = eventLog.args[2];
     lockEvent.accountId = eventLog.args[3];
+    lockEvent.txHash = receipt.transactionHash;
     return lockEvent;
 }
+
+
+export const erc20Abi = [
+    "function symbol() view returns (string)",
+    "function decimals() view returns (uint8)"
+];

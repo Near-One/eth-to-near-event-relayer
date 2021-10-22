@@ -24,11 +24,18 @@ and `/Users/<user>/.near-credentials` on MacOS: <br/>
 "rules": [
     {
         // nDAI - nLINK incentivization programm
+        "uuid": "f2093ebf-5386-4ede-99c7-3006c8f3b3d8" // Universally unique identifier of the incentivization programm
+        "fiatSymbol": "USDT",
+        "ethTokenSymbol": "DAI",
+        "ethTokenDecimals": 18,
+        "incentivizationTokenSymbol": "LINK",
+        "incentivizationTokenDecimals": 18,
         "ethToken": "0x6B175474E89094C44Da98b954EedeAC495271d0F", // DAI
         "bridgedToken": "6B175474E89094C44Da98b954EedeAC495271d0F.factory.bridge.near", // nDAI
         "incentivizationToken": "514910771af9ca656af840dff83e8264ecf986ca.factory.bridge.near", // nLINK
         "incentivizationFactor": 0.001, // 0.1% of $USD value of `bridgedToken`
-        "incentivizationTotalCap": 10000 // We assume 10000 nLINK tokens will be delivered to users at max
+        "incentivizationTotalCap": 10000, // We assume 10000 nLINK tokens will be delivered to users at max
+        "incentivizationBaseAmount": 10 // Constant amount of tokens that will be transferred to the user per his transaction
     },
     {
         // Another incentivization programm here

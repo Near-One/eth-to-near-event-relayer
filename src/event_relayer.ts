@@ -9,6 +9,7 @@ import { Account } from 'near-api-js';
 import { providers, Event } from 'ethers';
 import relayerConfig from './json/relayer-config.json';
 import { Incentivizer } from "./incentivizer";
+import {relayerCol} from "./db_manager";
 
 interface GaugeEvents {
     NUM_PROCESSED: string;
@@ -18,9 +19,9 @@ interface GaugeEvents {
 }
 
 export abstract class EventRelayer {
-    processedEventsCounter = 0;
-    skippedEventsCounter = 0;
-    relayedEventsCounter = 0;
+    protected processedEventsCounter = 0;
+    protected skippedEventsCounter = 0;
+    protected relayedEventsCounter = 0;
     protected relayerNearAccount: Account;
     protected ethersProvider: providers.JsonRpcProvider;
     protected dogstatsd: StatsD;
@@ -34,7 +35,7 @@ export abstract class EventRelayer {
 
     protected constructor(account: Account, ethersProvider: providers.JsonRpcProvider, dogstatsd: StatsD,
                           connectorType: ConnectorType, gaugeEvents: GaugeEvents, address: string,
-                          isAuroraTransferSupported: boolean) {
+                          isAuroraTransferSupported: boolean, incentivizer: Incentivizer) {
         this.relayerNearAccount = account;
         this.ethersProvider = ethersProvider;
         this.dogstatsd = dogstatsd;
@@ -42,7 +43,7 @@ export abstract class EventRelayer {
         this.gaugeEvents = gaugeEvents;
         this.address = address;
         this.isAuroraTransferSupported = isAuroraTransferSupported;
-        this.incentivizer = new Incentivizer(account);
+        this.incentivizer = incentivizer;
 
         this.dogstatsd.gauge(gaugeEvents.NUM_PROCESSED, this.processedEventsCounter);
         this.dogstatsd.gauge(gaugeEvents.NUM_SKIPPED, this.skippedEventsCounter);
@@ -79,6 +80,7 @@ export abstract class EventRelayer {
     }
 
     protected async process(eventLog: Event): Promise<void> {
+        const receipt = await eventLog.getTransactionReceipt();
         const proof = await findProofForEvent(this.ethersProvider, this.connectorType, eventLog);
         const isUsedProof = await nearIsUsedProof(this.relayerNearAccount, this.connectorType, proof);
 
@@ -92,16 +94,29 @@ export abstract class EventRelayer {
             return;
         }
 
-        await depositProofToNear(this.relayerNearAccount, this.connectorType, proof);
+        const relayEntry = relayerCol().insert({
+            eventTxHash: receipt.transactionHash,
+            blockNumber: receipt.blockNumber,
+            depositTxHash: ""
+        });
 
-        this.relayedConnectorEventsCounter.inc(1);
-        this.relayedEventsCounter += 1;
-        this.dogstatsd.gauge(this.gaugeEvents.NUM_RELAYED, this.relayedEventsCounter);
-        this.dogstatsd.gauge(this.gaugeEvents.LAST_BLOCK_WITH_RELAYED, eventLog.blockNumber);
+        try {
+            const depositRes = await depositProofToNear(this.relayerNearAccount, this.connectorType, proof);
+            relayEntry.depositTxHash = depositRes.transaction.hash;
+            relayerCol().update(relayEntry);
 
-        const lockEvent = getLockEvent(eventLog);
-        if (lockEvent != null)
-            await this.incentivizer.incentivize(lockEvent);
+            this.relayedConnectorEventsCounter.inc(1);
+            this.relayedEventsCounter += 1;
+            this.dogstatsd.gauge(this.gaugeEvents.NUM_RELAYED, this.relayedEventsCounter);
+            this.dogstatsd.gauge(this.gaugeEvents.LAST_BLOCK_WITH_RELAYED, eventLog.blockNumber);
+
+            const lockEvent = getLockEvent(eventLog, receipt);
+            if (lockEvent != null) {
+                await this.incentivizer.incentivize(lockEvent);
+            }
+        } catch (error) {
+            console.log(error);
+        }
     }
 
     protected isSkipEvent(isAuroraEvent: boolean): boolean {
@@ -116,13 +131,14 @@ export abstract class EventRelayer {
 }
 
 export class EthEventRelayer extends EventRelayer {
-    constructor(account: Account, ethersProvider: providers.JsonRpcProvider, httpPrometheus: HttpPrometheus, dogstatsd: StatsD) {
+    constructor(account: Account, ethersProvider: providers.JsonRpcProvider, httpPrometheus: HttpPrometheus,
+                dogstatsd: StatsD, incentivizer: Incentivizer) {
         super(account, ethersProvider, dogstatsd, ConnectorType.ethCustodian, {
             NUM_PROCESSED: metrics.GAUGE_ETH_NUM_PROCESSED_EVENTS,
             NUM_SKIPPED: metrics.GAUGE_ETH_NUM_SKIPPED_EVENTS,
             NUM_RELAYED: metrics.GAUGE_ETH_NUM_RELAYED_EVENTS,
             LAST_BLOCK_WITH_RELAYED: metrics.GAUGE_ETH_LAST_BLOCK_WITH_RELAYED_EVENT
-        }, relayerConfig.ethCustodianAddress, true);
+        }, relayerConfig.ethCustodianAddress, true, incentivizer);
         this.relayedConnectorEventsCounter = httpPrometheus.counter('num_relayed_eth_connector_events', 'Number of relayed ETH connector events');
     }
 
@@ -137,13 +153,14 @@ export class EthEventRelayer extends EventRelayer {
 }
 
 export class ERC20EventRelayer extends EventRelayer {
-    constructor(account: Account, ethersProvider: providers.JsonRpcProvider, httpPrometheus: HttpPrometheus, dogstatsd: StatsD) {
+    constructor(account: Account, ethersProvider: providers.JsonRpcProvider, httpPrometheus: HttpPrometheus,
+                dogstatsd: StatsD, incentivizer: Incentivizer) {
         super(account, ethersProvider, dogstatsd, ConnectorType.erc20Locker, {
             NUM_PROCESSED: metrics.GAUGE_ERC20_NUM_PROCESSED_EVENTS,
             NUM_SKIPPED: metrics.GAUGE_ERC20_NUM_SKIPPED_EVENTS,
             NUM_RELAYED: metrics.GAUGE_ERC20_NUM_RELAYED_EVENTS,
             LAST_BLOCK_WITH_RELAYED: metrics.GAUGE_ERC20_LAST_BLOCK_WITH_RELAYED_EVENT
-        }, relayerConfig.erc20LockerAddress, true);
+        }, relayerConfig.erc20LockerAddress, true, incentivizer);
         this.relayedConnectorEventsCounter = httpPrometheus.counter('num_relayed_erc20_connector_events', 'Number of relayed ERC20 connector events');
     }
 
@@ -158,13 +175,14 @@ export class ERC20EventRelayer extends EventRelayer {
 }
 
 export class ENearEventRelayer extends EventRelayer {
-    constructor(account: Account, ethersProvider: providers.JsonRpcProvider, httpPrometheus: HttpPrometheus, dogstatsd: StatsD) {
+    constructor(account: Account, ethersProvider: providers.JsonRpcProvider, httpPrometheus: HttpPrometheus,
+                dogstatsd: StatsD, incentivizer: Incentivizer) {
         super(account, ethersProvider, dogstatsd, ConnectorType.eNear, {
             NUM_PROCESSED: metrics.GAUGE_ENEAR_NUM_PROCESSED_EVENTS,
             NUM_SKIPPED: metrics.GAUGE_ENEAR_NUM_SKIPPED_EVENTS,
             NUM_RELAYED: metrics.GAUGE_ENEAR_NUM_RELAYED_EVENTS,
             LAST_BLOCK_WITH_RELAYED: metrics.GAUGE_ENEAR_LAST_BLOCK_WITH_RELAYED_EVENT
-        }, relayerConfig.eNearAddress, false);
+        }, relayerConfig.eNearAddress, false, incentivizer);
 
         this.relayedConnectorEventsCounter = httpPrometheus.counter('num_relayed_eNear_connector_events', 'Number of relayed eNEAR connector events');
     }
