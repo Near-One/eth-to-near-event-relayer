@@ -32,7 +32,7 @@ export function incentivizationCol(){ // eslint-disable-line @typescript-eslint/
 }
 
 export function relayerCol(){ // eslint-disable-line @typescript-eslint/explicit-module-boundary-types
-    return db.addCollection("relayer", { indices: ["eventTxHash"],
+    return db.addCollection("relayer", { indices: ["eventTxHash", "blockNumber"],
         exact:["eventTxHash", "blockNumber", "depositTxHash"] });
 }
 

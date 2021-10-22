@@ -55,6 +55,27 @@ dotenv.config({ path: "tests/.env" });
         rule.ethTokenDecimals = rule.incentivizationTokenDecimals  = 2;
         result = await incentivizer.getAmountToTransfer(rule, new BN("10000"));
         expect(result.toString()).to.be.equal("5");
+
+        when(mockedPriceSource.getPrice("FX","USDT")).thenResolve(1000000);
+        when(mockedPriceSource.getPrice("LINK", "USDT")).thenResolve(2);
+        rule.ethTokenDecimals = rule.incentivizationTokenDecimals  = 18;
+        rule.incentivizationFactor = 0.001;
+        result = await incentivizer.getAmountToTransfer(rule, new BN("25"));
+        expect(result.toString()).to.be.equal("12500");
+
+        when(mockedPriceSource.getPrice("FX","USDT")).thenResolve(1000000);
+        when(mockedPriceSource.getPrice("LINK", "USDT")).thenResolve(2.567891);
+        rule.ethTokenDecimals = rule.incentivizationTokenDecimals  = 18;
+        rule.incentivizationFactor = 0.001;
+        result = await incentivizer.getAmountToTransfer(rule, new BN("25"));
+        expect(result.toString()).to.be.equal("9736");
+
+        when(mockedPriceSource.getPrice("FX","USDT")).thenResolve(1000000.123456);
+        when(mockedPriceSource.getPrice("LINK", "USDT")).thenResolve(2.64321);
+        rule.ethTokenDecimals = rule.incentivizationTokenDecimals  = 18;
+        rule.incentivizationFactor = 0.001;
+        result = await incentivizer.getAmountToTransfer(rule, new BN("25"));
+        expect(result.toString()).to.be.equal("9458");
     }
 
     @test async getAmountToTransferTestBinance() {
