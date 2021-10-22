@@ -59,6 +59,6 @@ class ProofUsageChecker {
     }
 
     async isUsedProof(proof: any): Promise<boolean> {
-        return await(this.contract as any).is_used_proof(proof, { parse: parseBool });
+       return await(this.contract as any).is_used_proof(proof, { parse: parseBool, stringify: (data)=>{return data;} });
     }
 }
