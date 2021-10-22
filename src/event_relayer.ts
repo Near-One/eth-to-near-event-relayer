@@ -7,7 +7,7 @@ import { HttpPrometheus } from '../utils/http-prometheus';
 import { depositProofToNear, nearIsUsedProof } from './utils_near';
 import { Account } from 'near-api-js';
 import { providers, Event } from 'ethers';
-import relayerConfig from './json/relayer-config.json';
+import {relayerConfig} from './config';
 import {TreeBuilder} from "./eth_proof_tree_builder";
 
 interface GaugeEvents {

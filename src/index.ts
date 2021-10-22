@@ -1,13 +1,13 @@
 import * as dotenv from 'dotenv';
 import * as metrics from './metrics';
-import {getLastSessionBlockNumber, isLastSessionExists, recordSession} from './utils_relayer';
+import {getLastSession, recordSession} from './utils_relayer';
 import {balanceNearYoctoToNano} from './utils_near';
 import {HttpPrometheus} from '../utils/http-prometheus';
 import {EthOnNearClientContract} from './eth-on-near-client';
 import {ENearEventRelayer, ERC20EventRelayer, EthEventRelayer, EventRelayer} from "./event_relayer"
 import * as ethers from 'ethers';
 import {StatsD} from 'hot-shots';
-import relayerConfig from './json/relayer-config.json';
+import {relayerConfig, initConfig, currentNetwork} from './config';
 import * as nearAPI from 'near-api-js';
 import yargs from 'yargs';
 
@@ -22,28 +22,36 @@ class RelayerApp {
         const argv = yargs(process.argv.slice(2))
             .example('$0 --start-from-block 1234', 'Start the event-relayer from the given block number')
             .example('$0 --restore-last-session', 'Start the event-relayer restoring the latest session')
+            .example('$0 --network goerli', 'The network config name mainnet/goerli/ropsten or path to custom config')
             .boolean(['restore-last-session'])
+            .string(['network'])
+            .number(['startFromBlock'])
             .describe('start-from-block', 'The block number from which to start relaying')
             .help('h')
             .alias('h', 'help')
             .parseSync();
 
         let blockNumberFrom = 0;
+        let network = "";
 
         if (argv.restoreLastSession) {
             console.log(`Restarting from the last session...`);
 
-            if (!isLastSessionExists()) {
-                throw 'Session file does not exist! Can not restore from the last session';
+            const lastSession = getLastSession();
+            if (lastSession == null) {
+                throw 'Session file does not exist or not valid! Can not restore from the last session';
             }
 
-            blockNumberFrom = getLastSessionBlockNumber();
+            blockNumberFrom = lastSession.lastBlockNumber;
+            network = lastSession.network;
         } else if (!argv.startFromBlock) {
             console.log('Incorrect usage of the script. `start-from-block` variable is not specified');
         } else {
             blockNumberFrom = Number(argv.startFromBlock);
+            network = argv.network;
         }
 
+        initConfig(network);
         const url = process.env.WEB3_RPC_ENDPOINT;
         const ethersProvider = new ethers.providers.StaticJsonRpcProvider(url);
 
@@ -112,7 +120,10 @@ class RelayerApp {
 
         while (!this.isShouldClose) {
             try {
-                recordSession(currentBlockNumber);
+                recordSession({
+                    lastBlockNumber: currentBlockNumber,
+                    network: currentNetwork
+                });
 
                 const currentRelayerNearBalance = await relayerNearAccount.getAccountBalance();
                 const currentRelayerNanoNearBalance = balanceNearYoctoToNano(currentRelayerNearBalance.available);

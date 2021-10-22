@@ -1,7 +1,7 @@
 import BN from 'bn.js';
 import { Account, Contract } from 'near-api-js';
 import { ConnectorType } from './types';
-import relayerConfig from './json/relayer-config.json';
+import {relayerConfig} from './config';
 
 export interface IConnector {
     contract: Contract;

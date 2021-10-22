@@ -24,7 +24,7 @@ To build relayer run:<br/>
 `$ make`
 
 To start relayer run:<br/>
-`$ make run START_FROM_BLOCK=<required_block_number_to_start_from_here>`
+`$ make run START_FROM_BLOCK=<required_block_number_to_start_from_here> NETWORK=<network_name_or_path_to_custom_config>`
 
 To restore the last session run:<br/>
 `$ make restore-last-session`
