@@ -20,6 +20,7 @@ export interface IConfig {
     relayERC20Events: boolean,
     relayENearEvents: boolean,
     relayOnlyAuroraEvents: boolean,
+    retrieveReceiptsMode: string
 }
 
 export let relayerConfig: IConfig;
