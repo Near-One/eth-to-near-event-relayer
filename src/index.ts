@@ -45,7 +45,7 @@ class RelayerApp {
         }
 
         const url = process.env.WEB3_RPC_ENDPOINT;
-        const ethersProvider = new ethers.providers.JsonRpcProvider(url);
+        const ethersProvider = new ethers.providers.StaticJsonRpcProvider(url);
 
         await this.startRelayerFromBlockNumber(
             ethersProvider,
