@@ -1,6 +1,6 @@
 import { findProofForEvent } from './eth_generate_proof';
 import { getDepositedEventsForBlocks, getLockEvent, isEventForAurora } from './utils_eth';
-import { ConnectorType } from './types';
+import { ConnectorType, RetrieveReceiptsMode } from './types';
 import { StatsD } from 'hot-shots';
 import * as metrics from './metrics';
 import { HttpPrometheus } from '../utils/http-prometheus';
@@ -9,7 +9,8 @@ import { Account } from 'near-api-js';
 import { providers, Event } from 'ethers';
 import relayerConfig from './json/relayer-config.json';
 import { Incentivizer } from "./incentivizer";
-import {relayerCol} from "./db_manager";
+import { relayerCol } from "./db_manager";
+import { TreeBuilder } from "./eth_proof_tree_builder";
 
 interface GaugeEvents {
     NUM_PROCESSED: string;
@@ -32,6 +33,7 @@ export abstract class EventRelayer {
     protected isShouldClose = false;
     protected isAuroraTransferSupported: boolean;
     protected incentivizer: Incentivizer;
+    protected treeBuilder: TreeBuilder;
 
     protected constructor(account: Account, ethersProvider: providers.JsonRpcProvider, dogstatsd: StatsD,
                           connectorType: ConnectorType, gaugeEvents: GaugeEvents, address: string,
@@ -44,6 +46,7 @@ export abstract class EventRelayer {
         this.address = address;
         this.isAuroraTransferSupported = isAuroraTransferSupported;
         this.incentivizer = incentivizer;
+        this.treeBuilder = new TreeBuilder(ethersProvider, RetrieveReceiptsMode[relayerConfig.retrieveReceiptsMode]);
 
         this.dogstatsd.gauge(gaugeEvents.NUM_PROCESSED, this.processedEventsCounter);
         this.dogstatsd.gauge(gaugeEvents.NUM_SKIPPED, this.skippedEventsCounter);
@@ -81,7 +84,7 @@ export abstract class EventRelayer {
 
     protected async process(eventLog: Event): Promise<void> {
         const receipt = await eventLog.getTransactionReceipt();
-        const proof = await findProofForEvent(this.ethersProvider, this.connectorType, eventLog);
+        const proof = await findProofForEvent(this.treeBuilder, this.ethersProvider, this.connectorType, eventLog);
         const isUsedProof = await nearIsUsedProof(this.relayerNearAccount, this.connectorType, proof);
 
         this.processedEventsCounter += 1;

@@ -18,17 +18,15 @@
     "eth-util-lite": "near/eth-util-lite#master",
     "ethers": "^5.4.0",
     "hot-shots": "^8.3.2",
-    "merkle-patricia-tree": "^2.3.2",
-    "near-api-js": "https://github.com/near/near-api-js#fef7f683fca86980f3509987226fbc7f63b455cb",
     "node-binance-api": "^0.13.0",
+    "merkle-patricia-tree": "^4.2.2",
+    "near-api-js": "^0.43.1",
     "prom-client": "^12.0.0",
-    "promisfy": "^1.2.0",
     "rainbow-bridge-utils": "1.0.0",
     "rainbow-token-connector": "https://github.com/aurora-is-near/rainbow-token-connector",
-    "web3": "^1.4.0",
-    "yargs": "^17.0.1",
     "@types/lokijs": "^1.5.7",
-    "lokijs": "^1.5.12"
+    "lokijs": "^1.5.12",
+    "yargs": "^17.0.1"
   },
   "devDependencies": {
     "@testdeck/mocha": "^0.1.2",

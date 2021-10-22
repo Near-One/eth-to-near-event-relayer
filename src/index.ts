@@ -49,7 +49,7 @@ class RelayerApp {
         }
 
         const url = process.env.WEB3_RPC_ENDPOINT;
-        const ethersProvider = new ethers.providers.JsonRpcProvider(url);
+        const ethersProvider = new ethers.providers.StaticJsonRpcProvider(url);
 
         await this.startRelayerFromBlockNumber(
             ethersProvider,
@@ -121,49 +121,54 @@ class RelayerApp {
         }
 
         while (!this.isShouldClose) {
-            recordSession(currentBlockNumber);
+            try {
+                recordSession(currentBlockNumber);
 
-            const currentRelayerNearBalance = await relayerNearAccount.getAccountBalance();
-            const currentRelayerNanoNearBalance = balanceNearYoctoToNano(currentRelayerNearBalance.available);
-            dogstatsd.gauge(metrics.GAUGE_EVENT_RELAYER_ACCOUNT_NEAR_BALANCE, currentRelayerNanoNearBalance);
+                const currentRelayerNearBalance = await relayerNearAccount.getAccountBalance();
+                const currentRelayerNanoNearBalance = balanceNearYoctoToNano(currentRelayerNearBalance.available);
+                dogstatsd.gauge(metrics.GAUGE_EVENT_RELAYER_ACCOUNT_NEAR_BALANCE, currentRelayerNanoNearBalance);
 
-            const ethOnNearLastBlockNumber = await RelayerApp.getEthOnNearLastBlockNumber(relayerNearAccount, relayerConfig.ethOnNearClientAccount);
-            const clientLastSafeBlockNumber = ethOnNearLastBlockNumber - relayerConfig.numRequiredClientConfirmations;
+                const ethOnNearLastBlockNumber = await RelayerApp.getEthOnNearLastBlockNumber(relayerNearAccount, relayerConfig.ethOnNearClientAccount);
+                const clientLastSafeBlockNumber = ethOnNearLastBlockNumber - relayerConfig.numRequiredClientConfirmations;
 
-            ethOnNearLastBlockNumberGauge.set(ethOnNearLastBlockNumber);
-            relayerCurrentBlockNumberGauge.set(currentBlockNumber);
+                ethOnNearLastBlockNumberGauge.set(ethOnNearLastBlockNumber);
+                relayerCurrentBlockNumberGauge.set(currentBlockNumber);
 
-            dogstatsd.gauge(metrics.GAUGE_CLIENT_ETH_TO_NEAR_CURRENT_BLOCK_NUMBER, ethOnNearLastBlockNumber);
-            dogstatsd.gauge(metrics.GAUGE_EVENT_RELAYER_CURRENT_BLOCK_NUMBER, currentBlockNumber);
+                dogstatsd.gauge(metrics.GAUGE_CLIENT_ETH_TO_NEAR_CURRENT_BLOCK_NUMBER, ethOnNearLastBlockNumber);
+                dogstatsd.gauge(metrics.GAUGE_EVENT_RELAYER_CURRENT_BLOCK_NUMBER, currentBlockNumber);
 
-            if (clientLastSafeBlockNumber > currentBlockNumber) {
-                const blockFrom = currentBlockNumber + 1;
-                const blockTo = clientLastSafeBlockNumber;
+                if (clientLastSafeBlockNumber > currentBlockNumber) {
+                    const blockFrom = currentBlockNumber + 1;
+                    const blockTo = clientLastSafeBlockNumber;
 
-                console.log(`Processing blocks: [${blockFrom}; ${blockTo}]`);
+                    console.log(`Processing blocks: [${blockFrom}; ${blockTo}]`);
 
-                for (const relay of this.relayEvents) {
-                    if (! this.isShouldClose)
-                        await relay.processEvent(blockFrom, blockTo);
+                    for (const relay of this.relayEvents) {
+                        if (!this.isShouldClose)
+                            await relay.processEvent(blockFrom, blockTo);
+                    }
+
+                    if (this.isShouldClose)
+                        return;
+
+                    currentBlockNumber = clientLastSafeBlockNumber;
+
+                    console.log('--------------------------------------------------------------------------------');
+                } else if (currentBlockNumber > ethOnNearLastBlockNumber) {
+                    console.log(`=> It seems that EthOnNearClient is not synced. `
+                        + `Current relayer block height: ${currentBlockNumber}; `
+                        + `EthOnNearClient block height: ${ethOnNearLastBlockNumber}`);
+                } else {
+                    console.log(`=> Waiting for the new blocks in EthOnNearClient. `
+                        + `Current relayer block height: ${currentBlockNumber}; `
+                        + `EthOnNearClient block height: ${ethOnNearLastBlockNumber}. `
+                        + `Required num confirmations: ${relayerConfig.numRequiredClientConfirmations}`);
                 }
-
-                if (this.isShouldClose)
-                    return;
-
-                currentBlockNumber = clientLastSafeBlockNumber;
-
-                console.log('--------------------------------------------------------------------------------');
-            } else if (currentBlockNumber > ethOnNearLastBlockNumber) {
-                console.log(`=> It seems that EthOnNearClient is not synced. `
-                    + `Current relayer block height: ${currentBlockNumber}; `
-                    + `EthOnNearClient block height: ${ethOnNearLastBlockNumber}`);
-            } else {
-                console.log(`=> Waiting for the new blocks in EthOnNearClient. `
-                    + `Current relayer block height: ${currentBlockNumber}; `
-                    + `EthOnNearClient block height: ${ethOnNearLastBlockNumber}. `
-                    + `Required num confirmations: ${relayerConfig.numRequiredClientConfirmations}`);
+            } catch (e){
+                console.log(e);
             }
 
+            console.log(`Wait ${relayerConfig.pollingIntervalMs}ms`);
             await new Promise((resolve) => {
                 this.sleepPromiseResolve = resolve;
                 setTimeout(resolve, relayerConfig.pollingIntervalMs);

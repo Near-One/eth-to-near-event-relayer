@@ -1,15 +1,13 @@
-import Tree from 'merkle-patricia-tree';
-import { encode } from 'eth-util-lite';
-import { promisfy } from 'promisfy';
-import { Header, Proof, Receipt, Log } from 'eth-object';
+import {BaseTrie as Tree} from 'merkle-patricia-tree';
+import {encode} from 'eth-util-lite';
+import {Header, Log, Proof, Receipt} from 'eth-object';
 import * as ethers from 'ethers';
 import * as utils from 'ethereumjs-util';
-import { serialize as serializeBorsh } from 'near-api-js/lib/utils/serialize';
-import Path = require('path')
-import { promises as fs } from "fs"
-import Web3 from 'web3';
-import { BlockTransactionString } from 'web3-eth';
-import { ConnectorType } from './types';
+import {serialize as serializeBorsh} from 'near-api-js/lib/utils/serialize';
+import {promises as fs} from "fs"
+import {ConnectorType} from './types';
+import Path = require('path');
+import {TreeBuilder} from "./eth_proof_tree_builder";
 
 interface IProof {
     log_index: number;
@@ -63,24 +61,16 @@ function getFilenamePrefix(connectorType: ConnectorType) {
     return filenamePrefix;
 }
 
-export async function findProofForEvent(ethersProvider: ethers.providers.JsonRpcProvider, connectorType: ConnectorType, eventLog: ethers.Event) : Promise<Uint8Array> {
+export async function findProofForEvent(treeBuilder: TreeBuilder, ethersProvider: ethers.providers.JsonRpcProvider,
+                                        connectorType: ConnectorType, eventLog: ethers.Event) : Promise<Uint8Array> {
     const receipt: any = await eventLog.getTransactionReceipt();
     receipt.cumulativeGasUsed = receipt.cumulativeGasUsed.toNumber();
-
     console.log(`Generating the proof for TX with hash: ${receipt.transactionHash} at height ${receipt.blockNumber}`);
-
-    /// TODO: Fix this hack
-    const web3 = new Web3(ethersProvider.connection.url);
-    const block = await web3.eth.getBlock(receipt.blockNumber);
-    const tree = await buildTree(ethersProvider, block);
-
-    const proof = await extractProof(
-        ethersProvider,
-        block,
-        tree,
-        receipt.transactionIndex
-    );
-
+    const blockData = await ethersProvider.send(
+        'eth_getBlockByNumber',
+        [ethers.BigNumber.from(receipt.blockNumber)._hex, false]);
+    const tree = await treeBuilder.getTreeForBlock(blockData);
+    const proof = await extractProof(blockData, tree, receipt.transactionIndex);
     const logIndexInArray = receipt.logs.findIndex(
         l => l.logIndex === eventLog.logIndex
     );
@@ -118,49 +108,14 @@ export async function findProofForEvent(ethersProvider: ethers.providers.JsonRpc
     return serializedProof;
 }
 
-async function buildTree(ethersProvider: ethers.providers.JsonRpcProvider, block: any): Promise<Tree.Trie> {
-    const blockReceipts = await Promise.all(
-        block.transactions.map(t =>
-            ethersProvider.getTransactionReceipt(t))
-    );
-
-    // Build a Patricia Merkle Trie
-    const tree = new Tree();
-    await Promise.all(
-        blockReceipts.map((receipt: any) => {
-            const path = encode(receipt.transactionIndex)
-            receipt.cumulativeGasUsed = receipt.cumulativeGasUsed.toNumber();
-            const serializedReceipt = Receipt.fromObject(receipt).serialize()
-            return promisfy(tree.put, tree)(path, serializedReceipt)
-        })
-    );
-
-    const computedRoot = tree.root.toString('hex');
-    const expectedRoot = block.receiptsRoot.slice(2);
-
-    if (computedRoot !== expectedRoot) {
-        throw { message: "Invalid root", computedRoot, expectedRoot };
-    }
-
-    return tree;
-}
-
-async function extractProof(ethersProvider: ethers.providers.JsonRpcProvider, block: BlockTransactionString, tree, transactionIndex) {
+async function extractProof(blockData: any, tree: Tree, transactionIndex: number) {
     const encodedTransactionIndex = encode(transactionIndex);
-    const [, , stack] = await promisfy(
-        tree.findPath,
-        tree
-    )(encodedTransactionIndex);
-
-    const blockData = await ethersProvider.send(
-        'eth_getBlockByNumber',
-        [ethers.BigNumber.from(block.number)._hex, false]);
-
+    const path = await tree.findPath(encodedTransactionIndex);
     const header_rlp = Header.fromRpc(blockData).serialize();
-
+    const receiptProof = new Proof(path.stack.map((trieNode)=>{ return trieNode.raw() }));
     return {
         header_rlp,
-        receiptProof: Proof.fromStack(stack),
+        receiptProof: receiptProof,
         txIndex: transactionIndex
     };
 }
