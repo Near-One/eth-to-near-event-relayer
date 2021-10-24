@@ -75,7 +75,7 @@ export function getLockEvent(eventLog: Event, receipt: TransactionReceipt): Lock
     const lockEvent = new LockEvent();
     lockEvent.contractAddress = eventLog.args[0];
     lockEvent.sender = eventLog.args[1];
-    lockEvent.amount = eventLog.args[2];
+    lockEvent.amount = String(eventLog.args[2]);
     lockEvent.accountId = eventLog.args[3];
     lockEvent.txHash = receipt.transactionHash;
     return lockEvent;
