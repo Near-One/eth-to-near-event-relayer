@@ -48,7 +48,7 @@ export async function getDepositedEventsForBlocks(provider: providers.JsonRpcPro
 }
 
 export function isEventForAurora(nearAuroraAccount: string, eventLog: Event): boolean {
-    const recipientMessage = eventLog.args[1];
+    const recipientMessage = eventLog.args[1].toString();
     const recipientArgs = recipientMessage.split(':');
 
     if (recipientArgs.length < 2) {

@@ -2,6 +2,11 @@ import * as fs from 'fs';
 
 const LAST_PROCESSED_BLOCK_SESSION_FILE_NAME = '.event_relayer_session';
 
+interface ILastSession {
+    lastBlockNumber: number,
+    network: string
+}
+
 export function isLastSessionExists(): boolean {
     try {
         if (fs.existsSync(LAST_PROCESSED_BLOCK_SESSION_FILE_NAME)) {
@@ -12,24 +17,27 @@ export function isLastSessionExists(): boolean {
     }
 }
 
-export function getLastSessionBlockNumber(): number {
+export function getLastSession(): ILastSession {
     if (!isLastSessionExists()) {
         console.error(`Session file does not exist!`);
-        return -1;
+        return null;
     }
 
     try {
-        const last_block_str = fs.readFileSync(LAST_PROCESSED_BLOCK_SESSION_FILE_NAME, 'utf-8');
-        return Number(last_block_str);
+        const state = JSON.parse(fs.readFileSync(LAST_PROCESSED_BLOCK_SESSION_FILE_NAME, 'utf-8'));
+        if (typeof state === "object" && state != null) {
+            return state;
+        }
     } catch (err) {
         console.error(err);
-        return -1;
     }
+
+    return null;
 }
 
-export function recordSession(blockNumber: number): void {
+export function recordSession(lastSession: ILastSession): void {
     try {
-        fs.writeFileSync(LAST_PROCESSED_BLOCK_SESSION_FILE_NAME, blockNumber.toString());
+        fs.writeFileSync(LAST_PROCESSED_BLOCK_SESSION_FILE_NAME, JSON.stringify(lastSession));
     } catch (err) {
         console.error(err);
     }
