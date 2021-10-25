@@ -9,7 +9,9 @@ export interface IConfig {
     relayerNearAccount: string,
     ethOnNearClientAccount: string,
     erc20LockerAddress: string,
+    erc271LockerAddress: string,
     rainbowTokenFactoryAccount: string,
+    nftTokenFactoryAccount: string,
     ethCustodianAddress: string,
     auroraAccount: string,
     eNearAddress: string,
@@ -18,6 +20,7 @@ export interface IConfig {
     pollingIntervalMs: number,
     relayEthConnectorEvents: boolean,
     relayERC20Events: boolean,
+    relayERC271Events: boolean,
     relayENearEvents: boolean,
     relayOnlyAuroraEvents: boolean,
     retrieveReceiptsMode: string

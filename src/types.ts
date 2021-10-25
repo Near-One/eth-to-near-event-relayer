@@ -4,6 +4,7 @@ export enum ConnectorType {
     ethCustodian,
     erc20Locker,
     eNear,
+    erc271Locker,
 }
 
 export enum RetrieveReceiptsMode {

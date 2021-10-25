@@ -1,0 +1,18 @@
+{
+  "rules":[
+    {
+      "uuid": "8cb602de-cb02-480d-b171-bcb28c640251",
+      "fiatSymbol": "USDT",
+      "ethTokenSymbol": "DAI",
+      "ethTokenDecimals": 18,
+      "incentivizationTokenSymbol": "UNI",
+      "incentivizationTokenDecimals": 18,
+      "ethToken": "0x8685366166f907d22254c86d57a53b4a8be3e533",
+      "bridgedToken": "8685366166f907d22254c86d57a53b4a8be3e533.f2.kardev.testnet",
+      "incentivizationToken": "157575b0a144bdd344d5420d8ec4f049cb7bb95d.f2.kardev.testnet",
+      "incentivizationFactor": 0.001,
+      "incentivizationTotalCap": 1000,
+      "incentivizationBaseAmount": 2
+    }
+  ]
+}

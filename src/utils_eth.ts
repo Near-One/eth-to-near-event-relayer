@@ -6,36 +6,39 @@ import {Contract, ContractInterface, Event, EventFilter, providers} from 'ethers
 import {ConnectorType} from './types';
 import ethCustodianAbi from './json/eth-custodian-abi.json';
 import erc20LockerAbi from './json/erc20-locker-abi.json';
+import erc271LockerAbi from './json/erc271-locker-abi.json';
 import eNearAbi from './json/eth-near-abi.json';
 
 function getConnectorABI(connectorType: ConnectorType): ContractInterface {
-    if (connectorType === ConnectorType.ethCustodian) {
-        return ethCustodianAbi;
-    } else if (connectorType === ConnectorType.erc20Locker) {
-        return erc20LockerAbi;
-    } else if (connectorType === ConnectorType.eNear) {
-        return eNearAbi;
-    } else {
-        console.log("SHOULD NEVER GET HERE! Connector ABI not found");
-        return null;
+    switch (connectorType) {
+        case ConnectorType.ethCustodian:
+            return ethCustodianAbi;
+        case ConnectorType.erc20Locker:
+            return erc20LockerAbi;
+        case ConnectorType.eNear:
+            return eNearAbi;
+        case ConnectorType.erc271Locker:
+            return erc271LockerAbi;
+        default:
+            console.log("SHOULD NEVER GET HERE! Connector ABI not found");
+            return null;
     }
 }
 
 function getEventFilter(contract: Contract, connectorType: ConnectorType): EventFilter {
-    let eventFilter: EventFilter;
-
-    if (connectorType === ConnectorType.ethCustodian) {
-        eventFilter = contract.filters.Deposited(null);
-    } else if (connectorType === ConnectorType.erc20Locker) {
-        eventFilter = contract.filters.Locked(null);
-    } else if (connectorType === ConnectorType.eNear) {
-        eventFilter = contract.filters.TransferToNearInitiated(null);
-    } else {
-        console.log("SHOULD NEVER GET HERE! Connector EventFilter not found");
-        return null;
+    switch (connectorType) {
+        case ConnectorType.ethCustodian:
+            return contract.filters.Deposited(null);
+        case ConnectorType.erc20Locker:
+            return contract.filters.Locked(null);
+        case ConnectorType.erc271Locker:
+            return contract.filters.Locked(null);
+        case ConnectorType.eNear:
+            return contract.filters.TransferToNearInitiated(null);
+        default:
+            console.log("SHOULD NEVER GET HERE! Connector EventFilter not found");
+            return null;
     }
-
-    return eventFilter;
 }
 
 export async function getDepositedEventsForBlocks(provider: providers.JsonRpcProvider, contractAddress: string,

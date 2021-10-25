@@ -51,6 +51,8 @@ function getFilenamePrefix(connectorType: ConnectorType) {
         filenamePrefix += 'ethCustodian';
     } else if (connectorType === ConnectorType.erc20Locker) {
         filenamePrefix += 'erc20Locker';
+    } else if (connectorType === ConnectorType.erc271Locker) {
+        filenamePrefix += 'erc271Locker';
     } else if (connectorType === ConnectorType.eNear) {
         filenamePrefix += 'eNear';
     } else {
