@@ -10,6 +10,9 @@ import {StatsD} from 'hot-shots';
 import {relayerConfig, initConfig, currentNetwork} from './config';
 import * as nearAPI from 'near-api-js';
 import yargs from 'yargs';
+import * as dbManager from './db_manager'
+import {Incentivizer} from "./incentivizer";
+import incentivizationConfig from "./json/incentivization-config.json";
 
 dotenv.config();
 
@@ -19,6 +22,7 @@ class RelayerApp {
     private sleepPromiseResolve = null;
 
     async start() {
+        await dbManager.open();
         const argv = yargs(process.argv.slice(2))
             .example('$0 --start-from-block 1234', 'Start the event-relayer from the given block number')
             .example('$0 --restore-last-session', 'Start the event-relayer restoring the latest session')
@@ -61,6 +65,8 @@ class RelayerApp {
             relayerConfig.nearNetwork,
             blockNumberFrom,
         );
+
+        await dbManager.close();
     }
 
     close() {
@@ -106,16 +112,20 @@ class RelayerApp {
 
         let currentBlockNumber = blockNumber > 0 ? blockNumber - 1 : 0;
 
+        await Incentivizer.validateRules(incentivizationConfig.rules, relayerNearAccount, ethersProvider);
+        const incentivizer = new Incentivizer(relayerNearAccount);
+        incentivizer.addRules(incentivizationConfig.rules);
+
         if (relayerConfig.relayEthConnectorEvents) {
-            this.relayEvents.push(new EthEventRelayer(relayerNearAccount, ethersProvider, httpPrometheus, dogstatsd));
+            this.relayEvents.push(new EthEventRelayer(relayerNearAccount, ethersProvider, httpPrometheus, dogstatsd, incentivizer));
         }
 
         if (relayerConfig.relayERC20Events) {
-            this.relayEvents.push(new ERC20EventRelayer(relayerNearAccount, ethersProvider, httpPrometheus, dogstatsd));
+            this.relayEvents.push(new ERC20EventRelayer(relayerNearAccount, ethersProvider, httpPrometheus, dogstatsd, incentivizer));
         }
 
         if (relayerConfig.relayENearEvents) {
-            this.relayEvents.push(new ENearEventRelayer(relayerNearAccount, ethersProvider, httpPrometheus, dogstatsd));
+            this.relayEvents.push(new ENearEventRelayer(relayerNearAccount, ethersProvider, httpPrometheus, dogstatsd, incentivizer));
         }
 
         while (!this.isShouldClose) {
@@ -184,7 +194,9 @@ relayerApp.start()
 .then(() => process.exit(0))
 .catch(error => {
     console.error(error);
-    process.exit(1);
+    dbManager.close().then(() => {
+        process.exit(1);
+    });
 })
 
 process.on('SIGTERM', () => {

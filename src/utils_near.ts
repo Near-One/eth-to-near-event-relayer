@@ -5,19 +5,15 @@ import * as connectors from './connectors';
 
 const NEAR_YOCTO_TO_NANO = new BN(10).pow(new BN(15))
 
-export async function depositProofToNear(nearAccount: Account, connectorType: ConnectorType, proof: Uint8Array): Promise<void> {
+export async function depositProofToNear(nearAccount: Account, connectorType: ConnectorType, proof: Uint8Array) { // eslint-disable-line @typescript-eslint/explicit-module-boundary-types
     const connector = connectors.getConnector(nearAccount, connectorType);
-
     const gas_limit = new BN('300' + '0'.repeat(12)); // Gas limit
     const payment_for_storage = new BN('100000000000000000000').mul(new BN('600')); // Attached payment to pay for the storage
 
     console.log(`Submitting deposit transaction from: ${nearAccount.accountId} account to ${connector.address}`);
-    try {
-        await connector.submit(proof, gas_limit, payment_for_storage);
-        console.log(`Submitted.`);
-    } catch (error) {
-        console.log(error);
-    }
+    const res = await connector.submit(proof, gas_limit, payment_for_storage);
+    console.log(`Submitted.`);
+    return res;
 }
 
 export async function nearIsUsedProof(nearAccount: Account, connectorType: ConnectorType, proof: ArrayBuffer | SharedArrayBuffer): Promise<boolean> {
@@ -62,3 +58,38 @@ class ProofUsageChecker {
        return await(this.contract as any).is_used_proof(proof, { parse: parseBool, stringify: (data)=>{return data;} });
     }
 }
+
+function trimLeadingZeroes(value: string): string {
+    value = value.replace(/^0+/, '');
+    if (value === '') {
+        return '0';
+    }
+    return value;
+}
+
+export function parseTokenAmount(amt: string, decimals: number): string | null {
+    if (!amt) { return null; }
+    amt = amt.replace(/,/g, '').trim();
+    const split = amt.split('.');
+    const wholePart = split[0];
+    const fracPart = split[1] || '';
+    if (split.length > 2 || fracPart.length > decimals) {
+        throw new Error(`Cannot parse '${amt}' as token amount`);
+    }
+    return trimLeadingZeroes(wholePart + fracPart.padEnd(decimals, '0'));
+}
+
+export function formatTokenAmount(balance: string, decimals: number): string {
+    const balanceBN = new BN(balance, 10);
+    balance = balanceBN.toString();
+    const wholeStr = balance.substring(0, balance.length - decimals) || '0';
+    const fractionStr = balance.substring(balance.length - decimals)
+        .padStart(decimals, '0').substring(0, decimals);
+
+    return trimTrailingZeroes(`${wholeStr}.${fractionStr}`);
+}
+
+function trimTrailingZeroes(value: string): string {
+    return value.replace(/\.?0*$/, '');
+}
+
