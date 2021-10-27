@@ -8,6 +8,7 @@ import {promises as fs} from "fs"
 import {ConnectorType} from './types';
 import Path = require('path');
 import {TreeBuilder} from "./eth_proof_tree_builder";
+import {Formatter} from "@ethersproject/providers";
 
 interface IProof {
     log_index: number;
@@ -61,9 +62,12 @@ function getFilenamePrefix(connectorType: ConnectorType) {
     return filenamePrefix;
 }
 
+const rpcObjFormatter = new Formatter();
+
 export async function findProofForEvent(treeBuilder: TreeBuilder, ethersProvider: ethers.providers.JsonRpcProvider,
                                         connectorType: ConnectorType, eventLog: ethers.Event) : Promise<Uint8Array> {
-    const receipt: any = await eventLog.getTransactionReceipt();
+
+    const receipt: any = rpcObjFormatter.receipt(await ethersProvider.send('eth_getTransactionReceipt', [eventLog.transactionHash]));
     receipt.cumulativeGasUsed = receipt.cumulativeGasUsed.toNumber();
     console.log(`Generating the proof for TX with hash: ${receipt.transactionHash} at height ${receipt.blockNumber}`);
     const blockData = await ethersProvider.send(
