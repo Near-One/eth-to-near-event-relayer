@@ -121,6 +121,11 @@ dotenv.config({ path: "tests/.env" });
             amount: amount,
             accountId: rule.receiverAccountIdForTest,
             txHash: ""
+        }, {
+            id: null,
+            eventTxHash: "",
+            blockNumber: 1,
+            depositTxHash: ""
         });
     }
 
@@ -133,7 +138,8 @@ dotenv.config({ path: "tests/.env" });
             accountId: "test.testnet",
             txHash: "TEST_HASH",
             tokensAmount: "15000",
-            eventTxHash: "TEST_HASH"
+            eventTxHash: "TEST_HASH",
+            depositTxHash: "TEST_HASH"
         };
 
         await DbManager.incentivizationEventRep().save(entry);
@@ -205,22 +211,29 @@ dotenv.config({ path: "tests/.env" });
             txHash: ""
         };
 
+        const depositEvent: DepositEvent = {
+            id: null,
+            eventTxHash: "",
+            blockNumber: 1,
+            depositTxHash: ""
+        };
+
         let totalSpentBefore = await DbManager.getTotalTokensSpent(rule.uuid, rule.ethToken, rule.incentivizationToken);
         lockEvent.amount = "1";
-        let res = await incentivizer.incentivizeByRule(lockEvent, rule, instance(mockedContract));
+        let res = await incentivizer.incentivizeByRule(lockEvent, depositEvent, rule, instance(mockedContract));
         expect(res).to.be.false;
         let totalSpentAfter = await DbManager.getTotalTokensSpent(rule.uuid, rule.ethToken, rule.incentivizationToken);
         expect(totalSpentAfter.toString()).to.be.equal(totalSpentBefore.toString());
 
         lockEvent.amount = "10000";
-        res = await incentivizer.incentivizeByRule(lockEvent, rule, instance(mockedContract));
+        res = await incentivizer.incentivizeByRule(lockEvent, depositEvent, rule, instance(mockedContract));
         expect(res).to.be.true;
         totalSpentBefore = totalSpentAfter;
         totalSpentAfter = await DbManager.getTotalTokensSpent(rule.uuid, rule.ethToken, rule.incentivizationToken);
         expect(totalSpentAfter.toString()).to.be.equal(totalSpentBefore.add(new BN("10")).toString());
 
         rule.incentivizationTotalCap = 10;
-        res = await incentivizer.incentivizeByRule(lockEvent, rule, instance(mockedContract));
+        res = await incentivizer.incentivizeByRule(lockEvent, depositEvent, rule, instance(mockedContract));
         expect(res).to.be.false;
         totalSpentBefore = totalSpentAfter;
         totalSpentAfter = await DbManager.getTotalTokensSpent(rule.uuid, rule.ethToken, rule.incentivizationToken);

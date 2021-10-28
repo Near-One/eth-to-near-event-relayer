@@ -7,6 +7,7 @@ import {DbManager} from './db/db_manager';
 import {FungibleToken} from "./fungible_token";
 import {ethers} from "ethers";
 import {IncentivizationEvent} from "./db/entity/incentivization_event";
+import {DepositEvent} from "./db/entity/deposit_event";
 
 interface IRule {
     uuid: string,
@@ -83,7 +84,7 @@ export class Incentivizer {
         return res;
     }
 
-    async incentivize(lockEvent: LockEvent): Promise<boolean> {
+    async incentivize(lockEvent: LockEvent, depositEvent: DepositEvent): Promise<boolean> {
         const rules = this.rulesByEthToken.get(lockEvent.contractAddress.toLowerCase());
         if (rules == null || rules.length == 0 || lockEvent.accountId == this.nearAccount.accountId) {
             return false;
@@ -91,13 +92,16 @@ export class Incentivizer {
 
         for (const rule of rules) {
             const contract = new FungibleToken(this.nearAccount, rule.incentivizationToken);
-            await this.incentivizeByRule (lockEvent, rule, contract);
+            await this.incentivizeByRule (lockEvent, depositEvent, rule, contract);
         }
 
         return true;
     }
 
-    async incentivizeByRule(lockEvent: LockEvent, rule: IRule, contract: FungibleToken): Promise<boolean> {
+    async incentivizeByRule(lockEvent: LockEvent,
+                            depositEvent: DepositEvent,
+                            rule: IRule,
+                            contract: FungibleToken): Promise<boolean> {
         let amountToTransfer = await this.getAmountToTransfer(rule, new BN(lockEvent.amount));
         const accountTokenBalance = new BN(await contract.balanceOf(this.nearAccount.accountId));
         if (amountToTransfer.lten(0)) {
@@ -133,7 +137,8 @@ export class Incentivizer {
             accountId: lockEvent.accountId,
             txHash: res.transaction.hash,
             tokensAmount: amountToTransfer.toString(),
-            eventTxHash: lockEvent.txHash
+            eventTxHash: lockEvent.txHash,
+            depositTxHash: depositEvent.depositTxHash
         };
         await DbManager.incentivizationEventRep().save(entry);
         return true;

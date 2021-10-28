@@ -5,6 +5,7 @@ export class IncentivizationEvent {
     @PrimaryGeneratedColumn()
     id: number;
 
+    @Index()
     @Column()
     uuid: string;
 
@@ -25,6 +26,10 @@ export class IncentivizationEvent {
     @Column()
     tokensAmount: string;
 
+    @Index()
     @Column()
     eventTxHash: string;
+
+    @Column()
+    depositTxHash: string;
 }

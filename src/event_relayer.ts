@@ -116,9 +116,9 @@ export abstract class EventRelayer {
             this.dogstatsd.gauge(this.gaugeEvents.NUM_RELAYED, this.relayedEventsCounter);
             this.dogstatsd.gauge(this.gaugeEvents.LAST_BLOCK_WITH_RELAYED, eventLog.blockNumber);
 
-            const lockEvent = getLockEvent(eventLog, receipt);
+            const lockEvent = getLockEvent(eventLog, receipt.transactionHash);
             if (lockEvent != null) {
-                await this.incentivizer.incentivize(lockEvent);
+                await this.incentivizer.incentivize(lockEvent, relayEntry);
             }
         } catch (error) {
             console.log(error);
