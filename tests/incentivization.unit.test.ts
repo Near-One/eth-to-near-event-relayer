@@ -151,6 +151,11 @@ dotenv.config({ path: "tests/.env" });
         totalSpent = await DbManager.getTotalTokensSpent(rule.uuid, rule.ethToken, rule.incentivizationToken);
         expect(totalSpent.toString()).to.be.equal("15200").toString();
 
+        entry.tokensAmount = "20000000000000000000000000";
+        await DbManager.incentivizationEventRep().save(entry);
+        totalSpent = await DbManager.getTotalTokensSpent(rule.uuid, rule.ethToken, rule.incentivizationToken);
+        expect(totalSpent.toString()).to.be.equal("20000000000000000000015000").toString();
+
         const relayEntry: DepositEvent = {
             id: null,
             eventTxHash: "TEST_HASH",

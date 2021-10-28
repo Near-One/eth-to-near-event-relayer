@@ -26,7 +26,7 @@ export class DbManager {
 
     static async close(): Promise<void> {
         if (DbManager.dbConnection == null) {
-            return null;
+            return;
         }
         return DbManager.dbConnection.close();
     }
