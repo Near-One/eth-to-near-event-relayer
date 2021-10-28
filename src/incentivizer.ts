@@ -3,9 +3,10 @@ import {erc20Abi, LockEvent} from './utils_eth';
 import {IPriceSource, BinancePriceSource} from './price_source'
 import BN from "bn.js";
 import {formatTokenAmount, parseTokenAmount} from "./utils_near";
-import {getTotalTokensSpent, incentivizationCol} from './db_manager';
+import {DbManager} from './db/db_manager';
 import {FungibleToken} from "./fungible_token";
 import {ethers} from "ethers";
+import {IncentivizationEvent} from "./db/entity/incentivization_event";
 
 interface IRule {
     uuid: string,
@@ -103,7 +104,7 @@ export class Incentivizer {
             return false;
         }
 
-        const totalSpent = getTotalTokensSpent(rule.uuid, rule.ethToken, rule.incentivizationToken);
+        const totalSpent = await DbManager.getTotalTokensSpent(rule.uuid, rule.ethToken, rule.incentivizationToken);
         const totalCap = new BN (formatTokenAmount (rule.incentivizationTotalCap.toString(), rule.incentivizationTokenDecimals));
         if (totalSpent.gte(totalCap)){
             console.log(`The total cap ${totalCap} was exhausted`);
@@ -125,14 +126,16 @@ export class Incentivizer {
         await contract.registerReceiverIfNeeded(lockEvent.accountId, gasLimit);
         console.log(`Reward the account ${lockEvent.accountId} with ${amountToTransfer} of token ${rule.incentivizationToken}`);
         const res = await contract.transfer(lockEvent.accountId, amountToTransfer.toString(), gasLimit, new BN('1'));
-        incentivizationCol().insert({uuid: rule.uuid,
+        const entry : IncentivizationEvent = {id: null,
+            uuid: rule.uuid,
             ethTokenAddress: rule.ethToken,
             incentivizationTokenAddress: rule.incentivizationToken,
             accountId: lockEvent.accountId,
             txHash: res.transaction.hash,
             tokensAmount: amountToTransfer.toString(),
             eventTxHash: lockEvent.txHash
-        });
+        };
+        await DbManager.incentivizationEventRep().save(entry);
         return true;
     }
 }

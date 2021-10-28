@@ -8,9 +8,10 @@ import { depositProofToNear, nearIsUsedProof } from './utils_near';
 import { Account } from 'near-api-js';
 import { providers, Event } from 'ethers';
 import { Incentivizer } from "./incentivizer";
-import { relayerCol } from "./db_manager";
+import { DbManager } from "./db/db_manager";
 import { relayerConfig } from './config';
 import { TreeBuilder } from "./eth_proof_tree_builder";
+import { DepositEvent } from "./db/entity/deposit_event";
 
 interface GaugeEvents {
     NUM_PROCESSED: string;
@@ -97,16 +98,18 @@ export abstract class EventRelayer {
             return;
         }
 
-        const relayEntry = relayerCol().insert({
+        const relayEntry: DepositEvent = {
+            id: null,
             eventTxHash: receipt.transactionHash,
             blockNumber: receipt.blockNumber,
             depositTxHash: ""
-        });
+        }
+        await DbManager.depositEventRep().save(relayEntry);
 
         try {
             const depositRes = await depositProofToNear(this.relayerNearAccount, this.connectorType, proof);
             relayEntry.depositTxHash = depositRes.transaction.hash;
-            relayerCol().update(relayEntry);
+            await DbManager.depositEventRep().save(relayEntry);
 
             this.relayedConnectorEventsCounter.inc(1);
             this.relayedEventsCounter += 1;
