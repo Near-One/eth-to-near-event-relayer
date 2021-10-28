@@ -1,5 +1,6 @@
 import {Account} from "near-api-js";
 import BN from "bn.js";
+import {FinalExecutionOutcome} from "near-api-js/lib/providers";
 
 interface IFungibleTokenMetadata {
     spec: string,
@@ -24,13 +25,13 @@ export class FungibleToken {
         return this.account.viewFunction(this.address,'ft_metadata');
     }
 
-    async transfer(receiver_id: string, amount: string, gas_limit: BN, payment_for_storage: BN) { // eslint-disable-line @typescript-eslint/explicit-module-boundary-types
+    async transfer(receiverId: string, amount: string, gasLimit: BN, paymentForStorage: BN, memo?: string): Promise<FinalExecutionOutcome> {
         return this.account.functionCall({
             contractId: this.address,
             methodName: "ft_transfer",
-            args: {receiver_id: receiver_id, amount: amount},
-            gas: gas_limit,
-            attachedDeposit: payment_for_storage
+            args: {receiver_id: receiverId, amount: amount, memo: memo},
+            gas: gasLimit,
+            attachedDeposit: paymentForStorage
         });
     }
 

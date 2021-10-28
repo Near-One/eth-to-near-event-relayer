@@ -11,6 +11,7 @@ import {DepositEvent} from "./db/entity/deposit_event";
 
 interface IRule {
     uuid: string,
+    description: string,
     fiatSymbol: string,
     ethTokenSymbol: string,
     ethTokenDecimals: number,
