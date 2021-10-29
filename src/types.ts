@@ -13,6 +13,8 @@ export enum RetrieveReceiptsMode {
 }
 
 export interface IReceipt {
+    transactionHash: string,
+    blockNumber: number,
     transactionIndex: number,
     logs: Log[],
     logsBloom: string,

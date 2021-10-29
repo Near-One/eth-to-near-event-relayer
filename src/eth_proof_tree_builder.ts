@@ -4,6 +4,7 @@ import {encode} from 'eth-util-lite';
 import {BaseTrie as Tree} from "merkle-patricia-tree";
 import {promises as fs} from "fs";
 import {Receipt} from 'eth-object';
+import {StaticJsonRpcBatchProvider} from "./static-json-rpc-batch-provider";
 
 export class TreeBuilder {
     private ethersProvider: ethers.providers.JsonRpcProvider;
@@ -13,8 +14,8 @@ export class TreeBuilder {
         this.ethersProvider = provider;
         switch (mode){
             case RetrieveReceiptsMode.batch:
-                this.getReceipts = this.getReceiptsForBlockBatch;
-                this.ethersProvider = new ethers.providers.JsonRpcBatchProvider(provider.connection.url);
+                this.getReceipts = this.getReceiptsForBlock;
+                this.ethersProvider = new StaticJsonRpcBatchProvider(provider.connection.url);
                 break;
             case RetrieveReceiptsMode.parity:
                 this.getReceipts = this.getReceiptsForBlockParity;
@@ -49,40 +50,13 @@ export class TreeBuilder {
     }
 
     private async getReceiptsForBlock(block: IBlockTransactionString): Promise<Array<IReceipt>>{
-        return await Promise.all(
-            block.transactions.map(async (tx) =>{
-                    const txReceipt = await this.ethersProvider.getTransactionReceipt(tx);
-                    const receipt: IReceipt = {
-                        transactionIndex: txReceipt.transactionIndex,
-                        logs: txReceipt.logs,
-                        logsBloom: txReceipt.logsBloom,
-                        cumulativeGasUsed: txReceipt.cumulativeGasUsed.toNumber(),
-                        status: txReceipt.status,
-                        type: txReceipt.type
-                    };
-
-                    return receipt;
-                }
-            ));
-    }
-
-    private async getReceiptsForBlockBatch(block: IBlockTransactionString): Promise<Array<IReceipt>>{
-        const promises = block.transactions.map(tx => {
-            return this.ethersProvider.getTransactionReceipt(tx);
+        const promises = block.transactions.map(txHash => {
+            return this.ethersProvider.send('eth_getTransactionReceipt', [txHash]);
         });
 
         const receipts = await Promise.all(promises);
         return receipts.map((txReceipt) => {
-            const receipt: IReceipt = {
-                transactionIndex: txReceipt.transactionIndex,
-                logs: txReceipt.logs,
-                logsBloom: txReceipt.logsBloom,
-                cumulativeGasUsed: txReceipt.cumulativeGasUsed.toNumber(),
-                status: txReceipt.status,
-                type: txReceipt.type
-            };
-
-            return receipt;
+            return rpcObjToIReceipt(txReceipt);
         });
     }
 
@@ -92,16 +66,20 @@ export class TreeBuilder {
             [ethers.BigNumber.from(block.number)._hex, false]);
 
         return receipts.map((txReceipt: any) => {
-            const receipt: IReceipt = {
-                transactionIndex: txReceipt.transactionIndex,
-                logs: txReceipt.logs,
-                logsBloom: txReceipt.logsBloom,
-                cumulativeGasUsed: Number(txReceipt.cumulativeGasUsed),
-                status: Number(txReceipt.status),
-                type: Number(txReceipt.type)
-            };
-
-            return receipt;
+            return rpcObjToIReceipt(txReceipt);
         });
     }
+}
+
+function rpcObjToIReceipt(txReceipt: IReceipt): IReceipt {
+    return {
+        transactionIndex: Number(txReceipt.transactionIndex),
+        logs: txReceipt.logs,
+        logsBloom: txReceipt.logsBloom,
+        transactionHash: txReceipt.transactionHash,
+        blockNumber: Number(txReceipt.blockNumber),
+        cumulativeGasUsed: Number(txReceipt.cumulativeGasUsed),
+        status: Number(txReceipt.status),
+        type: Number(txReceipt.type)
+    };
 }
