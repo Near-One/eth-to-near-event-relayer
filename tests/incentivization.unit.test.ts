@@ -8,11 +8,12 @@ import {Account} from "near-api-js";
 import testConfig from "./test-config.json";
 import {parseTokenAmount} from "../src/utils_near";
 import BN from "bn.js";
-import * as dbManager from "../src/db_manager";
-import {getTotalTokensSpent} from "../src/db_manager";
+import {DbManager} from "../src/db/db_manager";
 import * as fs from "fs";
 import * as dotenv from "dotenv";
 import {FungibleToken} from "../src/fungible_token";
+import {IncentivizationEvent} from "../src/db/entity/incentivization_event";
+import {DepositEvent} from "../src/db/entity/deposit_event";
 dotenv.config({ path: "tests/.env" });
 
 @suite class IncentivizationUnitTests { // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -120,7 +121,55 @@ dotenv.config({ path: "tests/.env" });
             amount: amount,
             accountId: rule.receiverAccountIdForTest,
             txHash: ""
+        }, {
+            id: null,
+            eventTxHash: "",
+            blockNumber: 1,
+            depositTxHash: ""
         });
+    }
+
+    @test async dbTest() {
+        const rule = Object.assign({}, testConfig.rules[0]);
+        const entry: IncentivizationEvent = { id: null,
+            uuid: rule.uuid,
+            ethTokenAddress: rule.ethToken,
+            incentivizationTokenAddress: rule.incentivizationToken,
+            accountId: "test.testnet",
+            txHash: "TEST_HASH",
+            tokensAmount: "15000",
+            eventTxHash: "TEST_HASH",
+            depositTxHash: "TEST_HASH"
+        };
+
+        await DbManager.incentivizationEventRep().save(entry);
+        let totalSpent = await DbManager.getTotalTokensSpent(rule.uuid, rule.ethToken, rule.incentivizationToken);
+        expect(totalSpent.toString()).to.be.equal("15000").toString();
+
+        entry.id = null;
+        entry.tokensAmount = "500";
+        await DbManager.incentivizationEventRep().save(entry);
+        totalSpent = await DbManager.getTotalTokensSpent(rule.uuid, rule.ethToken, rule.incentivizationToken);
+        expect(totalSpent.toString()).to.be.equal("15500").toString();
+
+        entry.tokensAmount = "200";
+        await DbManager.incentivizationEventRep().save(entry);
+        totalSpent = await DbManager.getTotalTokensSpent(rule.uuid, rule.ethToken, rule.incentivizationToken);
+        expect(totalSpent.toString()).to.be.equal("15200").toString();
+
+        entry.tokensAmount = "20000000000000000000000000";
+        await DbManager.incentivizationEventRep().save(entry);
+        totalSpent = await DbManager.getTotalTokensSpent(rule.uuid, rule.ethToken, rule.incentivizationToken);
+        expect(totalSpent.toString()).to.be.equal("20000000000000000000015000").toString();
+
+        const relayEntry: DepositEvent = {
+            id: null,
+            eventTxHash: "TEST_HASH",
+            blockNumber: 666,
+            depositTxHash: ""
+        }
+        await DbManager.depositEventRep().save(relayEntry);
+        expect(JSON.stringify(relayEntry)).to.be.equal(JSON.stringify(await DbManager.depositEventRep().findOne())).toString();
     }
 
     @test async incentivizeTestTrue() {
@@ -162,39 +211,46 @@ dotenv.config({ path: "tests/.env" });
             txHash: ""
         };
 
-        let totalSpentBefore = getTotalTokensSpent(rule.uuid, rule.ethToken, rule.incentivizationToken);
+        const depositEvent: DepositEvent = {
+            id: null,
+            eventTxHash: "",
+            blockNumber: 1,
+            depositTxHash: ""
+        };
+
+        let totalSpentBefore = await DbManager.getTotalTokensSpent(rule.uuid, rule.ethToken, rule.incentivizationToken);
         lockEvent.amount = "1";
-        let res = await incentivizer.incentivizeByRule(lockEvent, rule, instance(mockedContract));
+        let res = await incentivizer.incentivizeByRule(lockEvent, depositEvent, rule, instance(mockedContract));
         expect(res).to.be.false;
-        let totalSpentAfter = getTotalTokensSpent(rule.uuid, rule.ethToken, rule.incentivizationToken);
+        let totalSpentAfter = await DbManager.getTotalTokensSpent(rule.uuid, rule.ethToken, rule.incentivizationToken);
         expect(totalSpentAfter.toString()).to.be.equal(totalSpentBefore.toString());
 
         lockEvent.amount = "10000";
-        res = await incentivizer.incentivizeByRule(lockEvent, rule, instance(mockedContract));
+        res = await incentivizer.incentivizeByRule(lockEvent, depositEvent, rule, instance(mockedContract));
         expect(res).to.be.true;
         totalSpentBefore = totalSpentAfter;
-        totalSpentAfter = getTotalTokensSpent(rule.uuid, rule.ethToken, rule.incentivizationToken);
+        totalSpentAfter = await DbManager.getTotalTokensSpent(rule.uuid, rule.ethToken, rule.incentivizationToken);
         expect(totalSpentAfter.toString()).to.be.equal(totalSpentBefore.add(new BN("10")).toString());
 
         rule.incentivizationTotalCap = 10;
-        res = await incentivizer.incentivizeByRule(lockEvent, rule, instance(mockedContract));
+        res = await incentivizer.incentivizeByRule(lockEvent, depositEvent, rule, instance(mockedContract));
         expect(res).to.be.false;
         totalSpentBefore = totalSpentAfter;
-        totalSpentAfter = getTotalTokensSpent(rule.uuid, rule.ethToken, rule.incentivizationToken);
+        totalSpentAfter = await DbManager.getTotalTokensSpent(rule.uuid, rule.ethToken, rule.incentivizationToken);
         expect(totalSpentAfter.toString()).to.be.equal(totalSpentBefore.toString());
     }
 
     async before() {
-        const dbFile = ".relayer_db_test.json";
+        const dbFile = ".relayer_db_test";
         try {
             fs.unlinkSync(dbFile)
         } catch(err) {
             // continue regardless of error
         }
-        await dbManager.open(dbFile);
+        await DbManager.open(dbFile);
     }
 
     async after() {
-        await dbManager.close();
+        await DbManager.close();
     }
 }

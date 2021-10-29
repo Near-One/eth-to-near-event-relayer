@@ -25,6 +25,7 @@ and `/Users/<user>/.near-credentials` on MacOS: <br/>
     {
         // nDAI - nLINK incentivization programm
         "uuid": "f2093ebf-5386-4ede-99c7-3006c8f3b3d8" // Universally unique identifier of the incentivization programm
+        "description": "Incentivization program DAI-LINK"
         "fiatSymbol": "USDT",
         "ethTokenSymbol": "DAI",
         "ethTokenDecimals": 18,

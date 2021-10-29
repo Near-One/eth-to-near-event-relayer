@@ -24,8 +24,9 @@
     "rainbow-bridge-utils": "1.0.0",
     "rainbow-token-connector": "https://github.com/aurora-is-near/rainbow-token-connector",
     "web3": "^1.4.0",
-    "@types/lokijs": "^1.5.7",
-    "lokijs": "^1.5.12",
+    "typeorm": "^0.2.38",
+    "sqlite3": "^5.0.2",
+    "reflect-metadata": "^0.1.13",
     "@types/yargs": "^17.0.1",
     "yargs": "^17.0.1"
   },

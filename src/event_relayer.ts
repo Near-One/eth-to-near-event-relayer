@@ -8,9 +8,10 @@ import { depositProofToNear, nearIsUsedProof } from './utils_near';
 import { Account } from 'near-api-js';
 import { providers, Event } from 'ethers';
 import { Incentivizer } from "./incentivizer";
-import { relayerCol } from "./db_manager";
+import { DbManager } from "./db/db_manager";
 import { relayerConfig } from './config';
 import { TreeBuilder } from "./eth_proof_tree_builder";
+import { DepositEvent } from "./db/entity/deposit_event";
 
 interface GaugeEvents {
     NUM_PROCESSED: string;
@@ -97,25 +98,27 @@ export abstract class EventRelayer {
             return;
         }
 
-        const relayEntry = relayerCol().insert({
+        const relayEntry: DepositEvent = {
+            id: null,
             eventTxHash: receipt.transactionHash,
             blockNumber: receipt.blockNumber,
             depositTxHash: ""
-        });
+        }
+        await DbManager.depositEventRep().save(relayEntry);
 
         try {
             const depositRes = await depositProofToNear(this.relayerNearAccount, this.connectorType, proof);
             relayEntry.depositTxHash = depositRes.transaction.hash;
-            relayerCol().update(relayEntry);
+            await DbManager.depositEventRep().save(relayEntry);
 
             this.relayedConnectorEventsCounter.inc(1);
             this.relayedEventsCounter += 1;
             this.dogstatsd.gauge(this.gaugeEvents.NUM_RELAYED, this.relayedEventsCounter);
             this.dogstatsd.gauge(this.gaugeEvents.LAST_BLOCK_WITH_RELAYED, eventLog.blockNumber);
 
-            const lockEvent = getLockEvent(eventLog, receipt);
+            const lockEvent = getLockEvent(eventLog, receipt.transactionHash);
             if (lockEvent != null) {
-                await this.incentivizer.incentivize(lockEvent);
+                await this.incentivizer.incentivize(lockEvent, relayEntry);
             }
         } catch (error) {
             console.log(error);

@@ -10,7 +10,7 @@ import {StatsD} from 'hot-shots';
 import {relayerConfig, initConfig, currentNetwork} from './config';
 import * as nearAPI from 'near-api-js';
 import yargs from 'yargs';
-import * as dbManager from './db_manager'
+import {DbManager} from './db/db_manager'
 import {Incentivizer} from "./incentivizer";
 import incentivizationConfig from "./json/incentivization-config.json";
 
@@ -22,7 +22,7 @@ class RelayerApp {
     private sleepPromiseResolve = null;
 
     async start() {
-        await dbManager.open();
+        await DbManager.open();
         const argv = yargs(process.argv.slice(2))
             .example('$0 --start-from-block 1234', 'Start the event-relayer from the given block number')
             .example('$0 --restore-last-session', 'Start the event-relayer restoring the latest session')
@@ -66,7 +66,7 @@ class RelayerApp {
             blockNumberFrom,
         );
 
-        await dbManager.close();
+        await DbManager.close();
     }
 
     close() {
@@ -194,7 +194,7 @@ relayerApp.start()
 .then(() => process.exit(0))
 .catch(error => {
     console.error(error);
-    dbManager.close().then(() => {
+    DbManager.close().then(() => {
         process.exit(1);
     });
 })

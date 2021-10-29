@@ -6,7 +6,9 @@
       "resolveJsonModule": true,
       "outDir": "./build",
       "esModuleInterop": true,
-      "module": "commonjs"
+      "module": "commonjs",
+      "emitDecoratorMetadata": true,
+      "experimentalDecorators": true
     },
     "include": [
         "./src/**/*"
