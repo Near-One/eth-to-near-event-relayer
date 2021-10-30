@@ -173,3 +173,25 @@ export class ENearEventRelayer extends EventRelayer {
         return '> Processing eNEAR->NEP-141 deposit event...';
     }
 }
+
+export class ERC271EventRelayer extends EventRelayer {
+    constructor(account: Account, ethersProvider: providers.JsonRpcProvider, httpPrometheus: HttpPrometheus,
+                dogstatsd: StatsD) {
+        super(account, ethersProvider, dogstatsd, ConnectorType.erc271Locker, {
+            NUM_PROCESSED: metrics.GAUGE_ERC271_NUM_PROCESSED_EVENTS,
+            NUM_SKIPPED: metrics.GAUGE_ERC271_NUM_SKIPPED_EVENTS,
+            NUM_RELAYED: metrics.GAUGE_ERC271_NUM_RELAYED_EVENTS,
+            LAST_BLOCK_WITH_RELAYED: metrics.GAUGE_ERC271_LAST_BLOCK_WITH_RELAYED_EVENT
+        }, relayerConfig.erc271LockerAddress, true);
+        this.relayedConnectorEventsCounter = httpPrometheus.counter('num_relayed_erc271_connector_events', 'Number of relayed ERC271 connector events');
+    }
+
+    override getTypeStr(): string {
+        return "ERC271Locker";
+    }
+
+    override processingLogMsg(isAuroraEvent: boolean): string {
+        return isAuroraEvent ? '> Processing ERC271->AuroraERC271 deposit event...'
+            : '> Processing ERC271->NEP-171 deposit event...';
+    }
+}
