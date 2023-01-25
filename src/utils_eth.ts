@@ -8,6 +8,7 @@ import ethCustodianAbi from './json/eth-custodian-abi.json';
 import erc20LockerAbi from './json/erc20-locker-abi.json';
 import erc271LockerAbi from './json/erc271-locker-abi.json';
 import eNearAbi from './json/eth-near-abi.json';
+import eFastBridge from './json/eth-fast-bridge-abi.json';
 
 function getConnectorABI(connectorType: ConnectorType): ContractInterface {
     switch (connectorType) {
@@ -19,6 +20,8 @@ function getConnectorABI(connectorType: ConnectorType): ContractInterface {
             return eNearAbi;
         case ConnectorType.erc271Locker:
             return erc271LockerAbi;
+        case ConnectorType.eFastBridge:
+            return eFastBridge
         default:
             console.log("SHOULD NEVER GET HERE! Connector ABI not found");
             return null;
@@ -35,6 +38,8 @@ function getEventFilter(contract: Contract, connectorType: ConnectorType): Event
             return contract.filters.Locked(null);
         case ConnectorType.eNear:
             return contract.filters.TransferToNearInitiated(null);
+        case ConnectorType.eFastBridge:
+            return contract.filters.TransferTokens(null);
         default:
             console.log("SHOULD NEVER GET HERE! Connector EventFilter not found");
             return null;

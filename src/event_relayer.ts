@@ -195,3 +195,24 @@ export class ERC271EventRelayer extends EventRelayer {
             : '> Processing ERC271->NEP-171 deposit event...';
     }
 }
+
+export class EFastBridgeEventRelayer extends EventRelayer {
+    constructor(account: Account, ethersProvider: providers.JsonRpcProvider, httpPrometheus: HttpPrometheus, dogstatsd: StatsD) {
+        super(account, ethersProvider, dogstatsd, ConnectorType.eNear, {
+            NUM_PROCESSED: metrics.GAUGE_EFASTBRIDGE_NUM_PROCESSED_EVENTS,
+            NUM_SKIPPED: metrics.GAUGE_EFASTBRIDGE_NUM_SKIPPED_EVENTS,
+            NUM_RELAYED: metrics.GAUGE_EFASTBRIDGE_NUM_RELAYED_EVENTS,
+            LAST_BLOCK_WITH_RELAYED: metrics.GAUGE_EFASTBRIDGE_LAST_BLOCK_WITH_RELAYED_EVENT
+        }, relayerConfig.eNearAddress, false);
+
+        this.relayedConnectorEventsCounter = httpPrometheus.counter('num_relayed_eNear_connector_events', 'Number of relayed eFASTBRIDGE connector events');
+    }
+
+    override getTypeStr(): string {
+        return "eFastBridge";
+    }
+
+    override processingLogMsg(): string {
+        return '> Processing eFASTBRIDGE->TransferTokens deposit event...';
+    }
+}

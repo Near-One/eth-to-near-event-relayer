@@ -122,6 +122,10 @@ class RelayerApp {
             this.relayEvents.push(new ENearEventRelayer(relayerNearAccount, ethersProvider, httpPrometheus, dogstatsd));
         }
 
+        if (relayerConfig.relayEFastBrigeEvents) {
+            this.relayEvents.push(new ENearEventRelayer(relayerNearAccount, ethersProvider, httpPrometheus, dogstatsd));
+        }
+
         while (!this.isShouldClose) {
             try {
                 recordSession({

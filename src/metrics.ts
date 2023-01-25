@@ -22,3 +22,8 @@ export const GAUGE_ENEAR_NUM_PROCESSED_EVENTS = 'event_relayer.eNEAR.num_process
 export const GAUGE_ENEAR_NUM_SKIPPED_EVENTS = 'event_relayer.eNEAR.num_skipped_events';
 export const GAUGE_ENEAR_NUM_RELAYED_EVENTS = 'event_relayer.eNEAR.num_relayed_events';
 export const GAUGE_ENEAR_LAST_BLOCK_WITH_RELAYED_EVENT = 'event_relayer.eNEAR.last_block_with_relayed_event';
+
+export const GAUGE_EFASTBRIDGE_NUM_PROCESSED_EVENTS = 'event_relayer.eFASTBRIDGE.num_processed_events';
+export const GAUGE_EFASTBRIDGE_NUM_SKIPPED_EVENTS = 'event_relayer.eFASTBRIDGE.num_skipped_events';
+export const GAUGE_EFASTBRIDGE_NUM_RELAYED_EVENTS = 'event_relayer.eFASTBRIDGE.num_relayed_events';
+export const GAUGE_EFASTBRIDGE_LAST_BLOCK_WITH_RELAYED_EVENT = 'event_relayer.eFASTBRIDGE.last_block_with_relayed_event';

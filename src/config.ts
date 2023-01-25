@@ -13,6 +13,7 @@ export interface IConfig {
     rainbowTokenFactoryAccount: string,
     nftTokenFactoryAccount: string,
     ethCustodianAddress: string,
+    eFastBridgeAccount: string,
     auroraAccount: string,
     eNearAddress: string,
     eNearAccount: string,
@@ -22,6 +23,7 @@ export interface IConfig {
     relayERC20Events: boolean,
     relayERC271Events: boolean,
     relayENearEvents: boolean,
+    relayEFastBrigeEvents: boolean,
     relayOnlyAuroraEvents: boolean,
     retrieveReceiptsMode: string
 }
