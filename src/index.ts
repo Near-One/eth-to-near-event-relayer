@@ -4,7 +4,7 @@ import {getLastSession, recordSession} from './utils_relayer';
 import {balanceNearYoctoToNano} from './utils_near';
 import {HttpPrometheus} from '../utils/http-prometheus';
 import {EthOnNearClientContract} from './eth-on-near-client';
-import {ENearEventRelayer, ERC20EventRelayer, ERC271EventRelayer, EthEventRelayer, EventRelayer} from "./event_relayer"
+import {EFastBridgeEventRelayer, ENearEventRelayer, ERC20EventRelayer, ERC271EventRelayer, EthEventRelayer, EventRelayer} from "./event_relayer"
 import * as ethers from 'ethers';
 import {StatsD} from 'hot-shots';
 import {relayerConfig, initConfig, currentNetwork} from './config';
@@ -123,7 +123,7 @@ class RelayerApp {
         }
 
         if (relayerConfig.relayEFastBrigeEvents) {
-            this.relayEvents.push(new ENearEventRelayer(relayerNearAccount, ethersProvider, httpPrometheus, dogstatsd));
+            this.relayEvents.push(new EFastBridgeEventRelayer(relayerNearAccount, ethersProvider, httpPrometheus, dogstatsd));
         }
 
         while (!this.isShouldClose) {
