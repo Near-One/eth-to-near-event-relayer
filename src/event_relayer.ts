@@ -213,6 +213,6 @@ export class EFastBridgeEventRelayer extends EventRelayer {
     }
 
     override processingLogMsg(): string {
-        return '> Processing eFASTBRIDGE->TransferTokens deposit event...';
+        return '> Processing eFASTBRIDGE->TransferTokens event...';
     }
 }
