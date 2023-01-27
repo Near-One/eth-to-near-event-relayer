@@ -198,14 +198,14 @@ export class ERC271EventRelayer extends EventRelayer {
 
 export class EFastBridgeEventRelayer extends EventRelayer {
     constructor(account: Account, ethersProvider: providers.JsonRpcProvider, httpPrometheus: HttpPrometheus, dogstatsd: StatsD) {
-        super(account, ethersProvider, dogstatsd, ConnectorType.eNear, {
+        super(account, ethersProvider, dogstatsd, ConnectorType.eFastBridge, {
             NUM_PROCESSED: metrics.GAUGE_EFASTBRIDGE_NUM_PROCESSED_EVENTS,
             NUM_SKIPPED: metrics.GAUGE_EFASTBRIDGE_NUM_SKIPPED_EVENTS,
             NUM_RELAYED: metrics.GAUGE_EFASTBRIDGE_NUM_RELAYED_EVENTS,
             LAST_BLOCK_WITH_RELAYED: metrics.GAUGE_EFASTBRIDGE_LAST_BLOCK_WITH_RELAYED_EVENT
         }, relayerConfig.eNearAddress, false);
 
-        this.relayedConnectorEventsCounter = httpPrometheus.counter('num_relayed_eNear_connector_events', 'Number of relayed eFASTBRIDGE connector events');
+        this.relayedConnectorEventsCounter = httpPrometheus.counter('num_relayed_eFastBridge_connector_events', 'Number of relayed eFASTBRIDGE connector events');
     }
 
     override getTypeStr(): string {
