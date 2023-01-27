@@ -16,6 +16,8 @@
   "eNearAddress": "0x85F17Cf997934a597031b2E18a9aB6ebD4B9f6a4",
   "eNearAccount": "e-near.near",
 
+  "eFastBridgeAccount": "fast.bridge.near",
+
   "numRequiredClientConfirmations": 20,
   "pollingIntervalMs": 30000,
 
@@ -24,5 +26,6 @@
   "relayERC271Events": false,
   "relayOnlyAuroraEvents": false,
   "relayENearEvents": false,
+  "relayEFastBrigeEvents":true,
   "retrieveReceiptsMode": "batch"
 }

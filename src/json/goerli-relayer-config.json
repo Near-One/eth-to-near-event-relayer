@@ -11,6 +11,7 @@
   "auroraAccount": "aurora",
   "eNearAddress": "0xe6b7C088Da1c2BfCf84aaE03fd6DE3C4f28629dA",
   "eNearAccount": "enear.goerli.testnet",
+  "eFastBridgeAccount": "fastbridge.testnet",
   "numRequiredClientConfirmations": 10,
   "pollingIntervalMs": 30000,
   "relayEthConnectorEvents": true,
@@ -18,5 +19,6 @@
   "relayERC271Events": true,
   "relayENearEvents": true,
   "relayOnlyAuroraEvents": false,
+  "relayEFastBrigeEvents":true,
   "retrieveReceiptsMode": "batch"
 }
