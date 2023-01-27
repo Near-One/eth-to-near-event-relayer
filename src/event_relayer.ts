@@ -203,7 +203,7 @@ export class EFastBridgeEventRelayer extends EventRelayer {
             NUM_SKIPPED: metrics.GAUGE_EFASTBRIDGE_NUM_SKIPPED_EVENTS,
             NUM_RELAYED: metrics.GAUGE_EFASTBRIDGE_NUM_RELAYED_EVENTS,
             LAST_BLOCK_WITH_RELAYED: metrics.GAUGE_EFASTBRIDGE_LAST_BLOCK_WITH_RELAYED_EVENT
-        }, relayerConfig.eNearAddress, false);
+        }, relayerConfig.eFastBridgeAddress, false);
 
         this.relayedConnectorEventsCounter = httpPrometheus.counter('num_relayed_eFastBridge_connector_events', 'Number of relayed eFASTBRIDGE connector events');
     }

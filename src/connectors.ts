@@ -18,7 +18,7 @@ export function getConnectorAccount(connectorType: ConnectorType): string {
         case ConnectorType.erc271Locker:
             return relayerConfig.nftTokenFactoryAccount;
         case ConnectorType.eFastBridge:
-            return relayerConfig.eFastBridgeAccount;
+            return relayerConfig.nFastBridgeAccount;
         default:
             throw new Error("Connector account not found!");
     }
