@@ -17,7 +17,7 @@ export function getConnectorAccount(connectorType: ConnectorType): string {
             return relayerConfig.eNearAccount;
         case ConnectorType.erc271Locker:
             return relayerConfig.nftTokenFactoryAccount;
-        case ConnectorType.erc271Locker:
+        case ConnectorType.eFastBridge:
             return relayerConfig.eFastBridgeAccount;
         default:
             throw new Error("Connector account not found!");
@@ -55,7 +55,7 @@ class Connector {
                 return "finalise_eth_to_near_transfer";
             case ConnectorType.erc271Locker:
                 return "finalise_eth_to_near_transfer";
-            case ConnectorType.erc271Locker:
+            case ConnectorType.eFastBridge:
                 return "lp_unlock";
             default:
                 throw new Error("Connector submit method not found!");
