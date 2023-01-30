@@ -13,7 +13,7 @@ export async function depositProofToNear(nearAccount: Account, connectorType: Co
 
     console.log(`Submitting deposit transaction from: ${nearAccount.accountId} account to ${connector.address}`);
     try {
-        await connector.submit(proof, gas_limit, payment_for_storage);
+        await connector.submit(proof, gas_limit,  (connectorType != ConnectorType.eFastBridge) ? payment_for_storage : new BN(0));
         console.log(`Submitted.`);
     } catch (error) {
         console.log(error);
@@ -24,6 +24,15 @@ export async function nearIsUsedProof(nearAccount: Account, connectorType: Conne
     const connectorContractAddress = connectors.getConnectorAccount(connectorType);
     const connector = new ProofUsageChecker(nearAccount, connectorContractAddress);
     return await connector.isUsedProof(Buffer.from(proof));
+}
+
+export async function EFastBridgeIsUsedProof(nearAccount: Account, connectorType: ConnectorType, txnId: string): Promise<boolean> {    
+    const connectorContractAddress = connectors.getConnectorAccount(connectorType);
+    const connector = new ProofUsageCheckerEFastBridge(nearAccount, connectorContractAddress);
+    
+    const tempData = await connector.isUsedProof(txnId);
+    
+    return tempData == null;
 }
 
 export function balanceNearYoctoToNano(balanceYocto: number | string | number[] | Uint8Array | Buffer | BN): number {
@@ -60,5 +69,28 @@ class ProofUsageChecker {
 
     async isUsedProof(proof: any): Promise<boolean> {
        return await(this.contract as any).is_used_proof(proof, { parse: parseBool, stringify: (data)=>{return data;} });
+    }
+}
+
+class ProofUsageCheckerEFastBridge {
+    contract: Contract;
+    address: string;
+
+    constructor(nearAccount: Account, connectorContractAddress: string) {
+        this.address = connectorContractAddress;
+        this.contract = new Contract(
+            nearAccount,
+            connectorContractAddress,
+            {
+                changeMethods: [],
+                viewMethods: ['get_pending_transfer'],
+            }
+        );
+    }
+
+    async isUsedProof(txnId: string): Promise<boolean> {
+        console.log(txnId);
+        
+       return await(this.contract as any).get_pending_transfer({"id" : txnId});
     }
 }
