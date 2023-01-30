@@ -4,7 +4,7 @@ import {ConnectorType, RetrieveReceiptsMode} from './types';
 import { StatsD } from 'hot-shots';
 import * as metrics from './metrics';
 import { HttpPrometheus } from '../utils/http-prometheus';
-import { EFastBridgeIsUsedProof, depositProofToNear, nearIsUsedProof } from './utils_near';
+import { eFastBridgeIsUsedProof, depositProofToNear, nearIsUsedProof } from './utils_near';
 import { Account } from 'near-api-js';
 import { providers, Event } from 'ethers';
 import {relayerConfig} from './config';
@@ -81,7 +81,7 @@ export abstract class EventRelayer {
     protected async process(eventLog: Event): Promise<void> {
         const proof = await findProofForEvent(this.treeBuilder, this.ethersProvider, this.connectorType, eventLog);
         const isUsedProof = (this.connectorType == ConnectorType.eFastBridge) ? 
-            await EFastBridgeIsUsedProof(this.relayerNearAccount, this.connectorType, Number(eventLog.args._nonce).toString()) :
+            await eFastBridgeIsUsedProof(this.relayerNearAccount, this.connectorType, Number(eventLog.args._nonce).toString()) :
             await nearIsUsedProof(this.relayerNearAccount, this.connectorType, proof);
 
         this.processedEventsCounter += 1;
