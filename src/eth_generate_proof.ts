@@ -69,7 +69,7 @@ function getFilenamePrefix(connectorType: ConnectorType) {
 const rpcObjFormatter = new Formatter();
 
 export async function findProofForEvent(treeBuilder: TreeBuilder, ethersProvider: ethers.providers.JsonRpcProvider,
-                                        connectorType: ConnectorType, eventLog: ethers.Event) : Promise<[Uint8Array, any]> {
+                                        connectorType: ConnectorType, eventLog: ethers.Event) : Promise<[Uint8Array, BorshProof]> {
 
     const receipt: any = rpcObjFormatter.receipt(await ethersProvider.send('eth_getTransactionReceipt', [eventLog.transactionHash]));
     receipt.cumulativeGasUsed = receipt.cumulativeGasUsed.toNumber();
@@ -113,7 +113,7 @@ export async function findProofForEvent(treeBuilder: TreeBuilder, ethersProvider
     await fs.writeFile(borshFile, serializedProof);
     console.log(`Borsh-serialized proof has been successfully generated and saved at ${borshFile}`);
 
-    return [serializedProof, args];
+    return [serializedProof, formattedProof];
 }
 
 async function extractProof(blockData: any, tree: Tree, transactionIndex: number) {
