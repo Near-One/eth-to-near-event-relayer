@@ -78,11 +78,11 @@ export async function findProofForEvent(treeBuilder: TreeBuilder, ethersProvider
         'eth_getBlockByNumber',
         [ethers.BigNumber.from(receipt.blockNumber)._hex, false]);
     const tree = await treeBuilder.getTreeForBlock(blockData);
-    const proof = await extractProof(blockData, tree, receipt.transactionIndex);
+    const proof = await extractProof(blockData, tree, receipt.transactionIndex);   
     const logIndexInArray = receipt.logs.findIndex(
         l => l.logIndex === eventLog.logIndex
-    );
-
+        );
+    
     const formattedProof = new BorshProof({
         log_index: logIndexInArray,
         log_entry_data: Array.from(Log.fromObject(eventLog).serialize()),
@@ -91,7 +91,7 @@ export async function findProofForEvent(treeBuilder: TreeBuilder, ethersProvider
         header_data: Array.from(proof.header_rlp),
         proof: Array.from(proof.receiptProof).map(utils.rlp.encode).map(b => Array.from(b))
     });
-
+    
     const args = {
         log_index: logIndexInArray,
         log_entry_data: formattedProof.log_entry_data,
@@ -100,7 +100,7 @@ export async function findProofForEvent(treeBuilder: TreeBuilder, ethersProvider
         header_data: formattedProof.header_data,
         proof: formattedProof.proof,
     }
-
+       
     const filenamePrefix = getFilenamePrefix(connectorType);
     const path = 'build/proofs';
     const file = Path.join(path, `${filenamePrefix}_${args.receipt_index}_${args.log_index}_${receipt.transactionHash}.json`);
@@ -113,7 +113,7 @@ export async function findProofForEvent(treeBuilder: TreeBuilder, ethersProvider
     await fs.writeFile(borshFile, serializedProof);
     console.log(`Borsh-serialized proof has been successfully generated and saved at ${borshFile}`);
 
-    return [serializedProof, formattedProof];
+    return [serializedProof, args];
 }
 
 async function extractProof(blockData: any, tree: Tree, transactionIndex: number) {

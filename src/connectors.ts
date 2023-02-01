@@ -35,7 +35,7 @@ class Connector {
         this.connectorType = connectorType;
     }
 
-    async submit(proof: Uint8Array, gasLimit: BN, paymentForStorage: BN) {
+    async submit(proof: any, gasLimit: BN, paymentForStorage: BN) {
         return this.nearAccount.functionCall({
             contractId: this.address,
             methodName: Connector.getConnectorSubmitMethod(this.connectorType),
