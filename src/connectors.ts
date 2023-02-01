@@ -39,7 +39,7 @@ class Connector {
         return this.nearAccount.functionCall({
             contractId: this.address,
             methodName: Connector.getConnectorSubmitMethod(this.connectorType),
-            args: this.connectorType === ConnectorType.eFastBridge ? {"proof": proof}:proof,
+            args: proof,
             gas: gasLimit,
             attachedDeposit: paymentForStorage
         });

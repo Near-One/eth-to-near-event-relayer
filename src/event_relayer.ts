@@ -79,7 +79,7 @@ export abstract class EventRelayer {
     }
 
     protected async process(eventLog: Event): Promise<void> {
-        const proof = await findProofForEvent(this.treeBuilder, this.ethersProvider, this.connectorType, eventLog);
+        const [proof, formattedProof] = await findProofForEvent(this.treeBuilder, this.ethersProvider, this.connectorType, eventLog);
         const isUsedProof = (this.connectorType == ConnectorType.eFastBridge) ? 
             await eFastBridgeIsUsedProof(this.relayerNearAccount, this.connectorType, Number(eventLog.args._nonce).toString()) :
             await nearIsUsedProof(this.relayerNearAccount, this.connectorType, proof);
@@ -93,7 +93,8 @@ export abstract class EventRelayer {
             this.dogstatsd.gauge(this.gaugeEvents.NUM_SKIPPED, this.skippedEventsCounter);
             return;
         }
-
+        this.connectorType === ConnectorType.eFastBridge ? 
+        await depositProofToNear(this.relayerNearAccount, this.connectorType, formattedProof):
         await depositProofToNear(this.relayerNearAccount, this.connectorType, proof);
 
         this.relayedConnectorEventsCounter.inc(1);
