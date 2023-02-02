@@ -94,7 +94,7 @@ export abstract class EventRelayer {
             return;
         }
         const proofForLpUnlock = {
-            "nonce": (Number(eventLog.args._nonce)).toString(),
+            "nonce": (eventLog.args._nonce).toString(),
             "proof": formattedProof,
         };
         
