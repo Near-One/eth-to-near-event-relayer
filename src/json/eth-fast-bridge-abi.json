@@ -221,12 +221,6 @@
         "internalType": "bytes32",
         "name": "_transfer_id",
         "type": "bytes32"
-      },
-      {
-        "indexed": false,
-        "internalType": "bool",
-        "name": "isEthTransfer",
-        "type": "bool"
       }
     ],
     "name": "TransferTokens",
