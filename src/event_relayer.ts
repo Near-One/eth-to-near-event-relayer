@@ -217,7 +217,7 @@ export class FastBridgeEventRelayer extends EventRelayer {
     }
 
     override getTypeStr(): string {
-        return "eFastBridge";
+        return "fastBridge";
     }
 
     override processingLogMsg(): string {
