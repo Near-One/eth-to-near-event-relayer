@@ -20,7 +20,7 @@ function getConnectorABI(connectorType: ConnectorType): ContractInterface {
             return eNearAbi;
         case ConnectorType.erc271Locker:
             return erc271LockerAbi;
-        case ConnectorType.eFastBridge:
+        case ConnectorType.fastBridge:
             return eFastBridge
         default:
             console.log("SHOULD NEVER GET HERE! Connector ABI not found");
@@ -38,7 +38,7 @@ function getEventFilter(contract: Contract, connectorType: ConnectorType): Event
             return contract.filters.Locked(null);
         case ConnectorType.eNear:
             return contract.filters.TransferToNearInitiated(null);
-        case ConnectorType.eFastBridge:
+        case ConnectorType.fastBridge:
             return contract.filters.TransferTokens(null);
         default:
             console.log("SHOULD NEVER GET HERE! Connector EventFilter not found");
