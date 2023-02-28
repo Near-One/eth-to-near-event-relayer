@@ -56,6 +56,8 @@ function getFilenamePrefix(connectorType: ConnectorType) {
         filenamePrefix += 'erc271Locker';
     } else if (connectorType === ConnectorType.eNear) {
         filenamePrefix += 'eNear';
+    } else if (connectorType === ConnectorType.fastBridge) {
+        filenamePrefix += 'eFastBridge';
     } else {
         console.log("SHOULD NEVER GET HERE!");
         return 'unknown';
@@ -67,7 +69,7 @@ function getFilenamePrefix(connectorType: ConnectorType) {
 const rpcObjFormatter = new Formatter();
 
 export async function findProofForEvent(treeBuilder: TreeBuilder, ethersProvider: ethers.providers.JsonRpcProvider,
-                                        connectorType: ConnectorType, eventLog: ethers.Event) : Promise<Uint8Array> {
+                                        connectorType: ConnectorType, eventLog: ethers.Event) : Promise<[Uint8Array, BorshProof]> {
 
     const receipt: any = rpcObjFormatter.receipt(await ethersProvider.send('eth_getTransactionReceipt', [eventLog.transactionHash]));
     receipt.cumulativeGasUsed = receipt.cumulativeGasUsed.toNumber();
@@ -79,8 +81,8 @@ export async function findProofForEvent(treeBuilder: TreeBuilder, ethersProvider
     const proof = await extractProof(blockData, tree, receipt.transactionIndex);
     const logIndexInArray = receipt.logs.findIndex(
         l => l.logIndex === eventLog.logIndex
-    );
-
+        );
+    
     const formattedProof = new BorshProof({
         log_index: logIndexInArray,
         log_entry_data: Array.from(Log.fromObject(eventLog).serialize()),
@@ -89,7 +91,7 @@ export async function findProofForEvent(treeBuilder: TreeBuilder, ethersProvider
         header_data: Array.from(proof.header_rlp),
         proof: Array.from(proof.receiptProof).map(utils.rlp.encode).map(b => Array.from(b))
     });
-
+    
     const args = {
         log_index: logIndexInArray,
         log_entry_data: formattedProof.log_entry_data,
@@ -98,7 +100,7 @@ export async function findProofForEvent(treeBuilder: TreeBuilder, ethersProvider
         header_data: formattedProof.header_data,
         proof: formattedProof.proof,
     }
-
+       
     const filenamePrefix = getFilenamePrefix(connectorType);
     const path = 'build/proofs';
     const file = Path.join(path, `${filenamePrefix}_${args.receipt_index}_${args.log_index}_${receipt.transactionHash}.json`);
@@ -111,7 +113,7 @@ export async function findProofForEvent(treeBuilder: TreeBuilder, ethersProvider
     await fs.writeFile(borshFile, serializedProof);
     console.log(`Borsh-serialized proof has been successfully generated and saved at ${borshFile}`);
 
-    return serializedProof;
+    return [serializedProof, args];
 }
 
 async function extractProof(blockData: any, tree: Tree, transactionIndex: number) {

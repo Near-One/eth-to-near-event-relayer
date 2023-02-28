@@ -1,10 +1,10 @@
-import { findProofForEvent } from './eth_generate_proof';
+import { BorshProof, findProofForEvent } from './eth_generate_proof';
 import { getDepositedEventsForBlocks, isEventForAurora } from './utils_eth';
 import {ConnectorType, RetrieveReceiptsMode} from './types';
 import { StatsD } from 'hot-shots';
 import * as metrics from './metrics';
 import { HttpPrometheus } from '../utils/http-prometheus';
-import { depositProofToNear, nearIsUsedProof } from './utils_near';
+import { fastBridgeIsUsedProof, depositProofToNear, nearIsUsedProof } from './utils_near';
 import { Account } from 'near-api-js';
 import { providers, Event } from 'ethers';
 import {relayerConfig} from './config';
@@ -15,6 +15,26 @@ interface GaugeEvents {
     NUM_SKIPPED: string;
     NUM_RELAYED: string;
     LAST_BLOCK_WITH_RELAYED: string;
+}
+
+export abstract class Proof {}
+
+class FastBridgeProof extends Proof{
+    nonce: string;
+    proof: BorshProof;
+    constructor(nonce: string, proof: BorshProof) {
+        super()
+        this.nonce = nonce;
+        this.proof = proof;
+    }
+}
+
+class GenericProof extends Proof{
+    proof: Uint8Array
+    constructor(proof: Uint8Array) {
+        super()
+        this.proof = proof;
+    }
 }
 
 export abstract class EventRelayer {
@@ -79,8 +99,10 @@ export abstract class EventRelayer {
     }
 
     protected async process(eventLog: Event): Promise<void> {
-        const proof = await findProofForEvent(this.treeBuilder, this.ethersProvider, this.connectorType, eventLog);
-        const isUsedProof = await nearIsUsedProof(this.relayerNearAccount, this.connectorType, proof);
+        const [proof, formattedProof] = await findProofForEvent(this.treeBuilder, this.ethersProvider, this.connectorType, eventLog);
+        const isUsedProof = (this.connectorType == ConnectorType.fastBridge) ? 
+            await fastBridgeIsUsedProof(this.relayerNearAccount, this.connectorType, Number(eventLog.args._nonce).toString()) : 
+            await nearIsUsedProof(this.relayerNearAccount, this.connectorType, proof);
 
         this.processedEventsCounter += 1;
         this.dogstatsd.gauge(this.gaugeEvents.NUM_PROCESSED, this.processedEventsCounter);
@@ -91,8 +113,10 @@ export abstract class EventRelayer {
             this.dogstatsd.gauge(this.gaugeEvents.NUM_SKIPPED, this.skippedEventsCounter);
             return;
         }
-
-        await depositProofToNear(this.relayerNearAccount, this.connectorType, proof);
+        
+        this.connectorType === ConnectorType.fastBridge ? 
+        await depositProofToNear(this.relayerNearAccount, this.connectorType, new FastBridgeProof((eventLog.args._nonce).toString(), formattedProof)):
+        await depositProofToNear(this.relayerNearAccount, this.connectorType, new GenericProof(proof));
 
         this.relayedConnectorEventsCounter.inc(1);
         this.relayedEventsCounter += 1;
@@ -193,5 +217,26 @@ export class ERC271EventRelayer extends EventRelayer {
     override processingLogMsg(isAuroraEvent: boolean): string {
         return isAuroraEvent ? '> Processing ERC271->AuroraERC271 deposit event...'
             : '> Processing ERC271->NEP-171 deposit event...';
+    }
+}
+
+export class FastBridgeEventRelayer extends EventRelayer {
+    constructor(account: Account, ethersProvider: providers.JsonRpcProvider, httpPrometheus: HttpPrometheus, dogstatsd: StatsD) {
+        super(account, ethersProvider, dogstatsd, ConnectorType.fastBridge, {
+            NUM_PROCESSED: metrics.GAUGE_EFASTBRIDGE_NUM_PROCESSED_EVENTS,
+            NUM_SKIPPED: metrics.GAUGE_EFASTBRIDGE_NUM_SKIPPED_EVENTS,
+            NUM_RELAYED: metrics.GAUGE_EFASTBRIDGE_NUM_RELAYED_EVENTS,
+            LAST_BLOCK_WITH_RELAYED: metrics.GAUGE_EFASTBRIDGE_LAST_BLOCK_WITH_RELAYED_EVENT
+        }, relayerConfig.ethFastBridgeAddress, false);
+
+        this.relayedConnectorEventsCounter = httpPrometheus.counter('num_relayed_fast_bridge_connector_events', 'Number of relayed FASTBRIDGE connector events');
+    }
+
+    override getTypeStr(): string {
+        return "fastBridge";
+    }
+
+    override processingLogMsg(): string {
+        return '> Processing eFASTBRIDGE->TransferTokens event...';
     }
 }
