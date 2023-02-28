@@ -5,7 +5,7 @@ export enum ConnectorType {
     erc20Locker,
     eNear,
     erc271Locker,
-    eFastBridge
+    fastBridge
 }
 
 export enum RetrieveReceiptsMode {
