@@ -213,7 +213,7 @@ export class FastBridgeEventRelayer extends EventRelayer {
             LAST_BLOCK_WITH_RELAYED: metrics.GAUGE_EFASTBRIDGE_LAST_BLOCK_WITH_RELAYED_EVENT
         }, relayerConfig.eFastBridgeAddress, false);
 
-        this.relayedConnectorEventsCounter = httpPrometheus.counter('num_relayed_eFastBridge_connector_events', 'Number of relayed eFASTBRIDGE connector events');
+        this.relayedConnectorEventsCounter = httpPrometheus.counter('num_relayed_fast_bridge_connector_events', 'Number of relayed FASTBRIDGE connector events');
     }
 
     override getTypeStr(): string {
