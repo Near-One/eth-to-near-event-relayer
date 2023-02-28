@@ -30,9 +30,7 @@ export async function fastBridgeIsUsedProof(nearAccount: Account, connectorType:
     const connectorContractAddress = connectors.getConnectorAccount(connectorType);
     const connector = new ProofUsageCheckerEFastBridge(nearAccount, connectorContractAddress);
     
-    const tempData = await connector.isUsedProof(txnId);
-    
-    return tempData == null;
+    return connector.isUsedProof(txnId);
 }
 
 export function balanceNearYoctoToNano(balanceYocto: number | string | number[] | Uint8Array | Buffer | BN): number {
