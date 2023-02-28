@@ -72,7 +72,7 @@ class ProofUsageChecker {
     }
 }
 
-class ProofUsageCheckerEFastBridge {
+class ProofUsageCheckerFastBridge {
     contract: Contract;
     address: string;
 
