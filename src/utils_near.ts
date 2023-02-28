@@ -26,7 +26,7 @@ export async function nearIsUsedProof(nearAccount: Account, connectorType: Conne
     return await connector.isUsedProof(Buffer.from(proof));
 }
 
-export async function eFastBridgeIsUsedProof(nearAccount: Account, connectorType: ConnectorType, txnId: string): Promise<boolean> {    
+export async function fastBridgeIsUsedProof(nearAccount: Account, connectorType: ConnectorType, txnId: string): Promise<boolean> {    
     const connectorContractAddress = connectors.getConnectorAccount(connectorType);
     const connector = new ProofUsageCheckerEFastBridge(nearAccount, connectorContractAddress);
     
