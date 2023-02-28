@@ -204,7 +204,7 @@ export class ERC271EventRelayer extends EventRelayer {
     }
 }
 
-export class EFastBridgeEventRelayer extends EventRelayer {
+export class FastBridgeEventRelayer extends EventRelayer {
     constructor(account: Account, ethersProvider: providers.JsonRpcProvider, httpPrometheus: HttpPrometheus, dogstatsd: StatsD) {
         super(account, ethersProvider, dogstatsd, ConnectorType.eFastBridge, {
             NUM_PROCESSED: metrics.GAUGE_EFASTBRIDGE_NUM_PROCESSED_EVENTS,
