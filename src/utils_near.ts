@@ -87,8 +87,6 @@ class ProofUsageCheckerFastBridge {
     }
 
     async isUsedProof(txnId: string): Promise<boolean> {
-        console.log(txnId);
-        
-       return await(this.contract as any).get_pending_transfer({"id" : txnId});
+       return await(this.contract as any).get_pending_transfer({"id" : txnId}) == null;
     }
 }
