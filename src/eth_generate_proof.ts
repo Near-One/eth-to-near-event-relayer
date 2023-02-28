@@ -78,7 +78,7 @@ export async function findProofForEvent(treeBuilder: TreeBuilder, ethersProvider
         'eth_getBlockByNumber',
         [ethers.BigNumber.from(receipt.blockNumber)._hex, false]);
     const tree = await treeBuilder.getTreeForBlock(blockData);
-    const proof = await extractProof(blockData, tree, receipt.transactionIndex);   
+    const proof = await extractProof(blockData, tree, receipt.transactionIndex);
     const logIndexInArray = receipt.logs.findIndex(
         l => l.logIndex === eventLog.logIndex
         );
