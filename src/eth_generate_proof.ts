@@ -56,7 +56,7 @@ function getFilenamePrefix(connectorType: ConnectorType) {
         filenamePrefix += 'erc271Locker';
     } else if (connectorType === ConnectorType.eNear) {
         filenamePrefix += 'eNear';
-    } else if (connectorType === ConnectorType.eFastBridge) {
+    } else if (connectorType === ConnectorType.fastBridge) {
         filenamePrefix += 'eFastBridge';
     } else {
         console.log("SHOULD NEVER GET HERE!");

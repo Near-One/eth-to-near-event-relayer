@@ -2,10 +2,11 @@ import BN from 'bn.js';
 import { Account, Contract } from 'near-api-js';
 import { ConnectorType } from './types';
 import * as connectors from './connectors';
+import { Proof } from './event_relayer';
 
 const NEAR_YOCTO_TO_NANO = new BN(10).pow(new BN(15))
 
-export async function depositProofToNear(nearAccount: Account, connectorType: ConnectorType, proof: any): Promise<void> {
+export async function depositProofToNear(nearAccount: Account, connectorType: ConnectorType, proof: Proof): Promise<void> {
     const connector = connectors.getConnector(nearAccount, connectorType);
 
     const gas_limit = new BN('300' + '0'.repeat(12)); // Gas limit
@@ -13,7 +14,7 @@ export async function depositProofToNear(nearAccount: Account, connectorType: Co
 
     console.log(`Submitting deposit transaction from: ${nearAccount.accountId} account to ${connector.address}`);
     try {
-        await connector.submit(proof, gas_limit,  (connectorType != ConnectorType.eFastBridge) ? payment_for_storage : new BN(0));
+        await connector.submit(proof, gas_limit,  (connectorType != ConnectorType.fastBridge) ? payment_for_storage : new BN(0));
         console.log(`Submitted.`);
     } catch (error) {
         console.log(error);
@@ -28,7 +29,7 @@ export async function nearIsUsedProof(nearAccount: Account, connectorType: Conne
 
 export async function fastBridgeIsUsedProof(nearAccount: Account, connectorType: ConnectorType, txnId: string): Promise<boolean> {    
     const connectorContractAddress = connectors.getConnectorAccount(connectorType);
-    const connector = new ProofUsageCheckerEFastBridge(nearAccount, connectorContractAddress);
+    const connector = new ProofUsageCheckerFastBridge(nearAccount, connectorContractAddress);
     
     return connector.isUsedProof(txnId);
 }

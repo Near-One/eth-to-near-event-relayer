@@ -2,6 +2,7 @@ import BN from 'bn.js';
 import { Account } from 'near-api-js';
 import { ConnectorType } from './types';
 import { relayerConfig } from './config';
+import { Proof } from './event_relayer';
 
 export function getConnector(nearAccount: Account, connectorType: ConnectorType): Connector {
     return new Connector(nearAccount, getConnectorAccount(connectorType), connectorType);
@@ -17,8 +18,8 @@ export function getConnectorAccount(connectorType: ConnectorType): string {
             return relayerConfig.eNearAccount;
         case ConnectorType.erc271Locker:
             return relayerConfig.nftTokenFactoryAccount;
-        case ConnectorType.eFastBridge:
-            return relayerConfig.nFastBridgeAccount;
+        case ConnectorType.fastBridge:
+            return relayerConfig.nearFastBridgeAccount;
         default:
             throw new Error("Connector account not found!");
     }
@@ -35,7 +36,7 @@ class Connector {
         this.connectorType = connectorType;
     }
 
-    async submit(proof: any, gasLimit: BN, paymentForStorage: BN) {
+    async submit(proof: Proof, gasLimit: BN, paymentForStorage: BN) {
         return this.nearAccount.functionCall({
             contractId: this.address,
             methodName: Connector.getConnectorSubmitMethod(this.connectorType),
@@ -55,7 +56,7 @@ class Connector {
                 return "finalise_eth_to_near_transfer";
             case ConnectorType.erc271Locker:
                 return "finalise_eth_to_near_transfer";
-            case ConnectorType.eFastBridge:
+            case ConnectorType.fastBridge:
                 return "lp_unlock";
             default:
                 throw new Error("Connector submit method not found!");

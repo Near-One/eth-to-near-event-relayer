@@ -16,8 +16,8 @@
   "eNearAddress": "0x85F17Cf997934a597031b2E18a9aB6ebD4B9f6a4",
   "eNearAccount": "e-near.near",
 
-  "nFastBridgeAccount": "fast.bridge.near",
-  "eFastBridgeAddress":"0xC5E985976d9b521904AD96306356ECA0fE4F3a1f",
+  "nearFastBridgeAccount": "fast.bridge.near",
+  "ethFastBridgeAddress":"0xC5E985976d9b521904AD96306356ECA0fE4F3a1f",
 
   "numRequiredClientConfirmations": 20,
   "pollingIntervalMs": 30000,
