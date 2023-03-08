@@ -3,7 +3,7 @@
   "nearNetwork": "mainnet",
 
   "relayerNearAccount": "event-relayer.near",
-  "ethOnNearClientAccount": "client.bridge.near",
+  "ethOnNearClientAccount": "client-eth2.bridge.near",
 
   "erc20LockerAddress": "0x23ddd3e3692d1861ed57ede224608875809e127f",
   "erc271LockerAddress": "",
@@ -23,6 +23,6 @@
   "relayERC20Events": true,
   "relayERC271Events": false,
   "relayOnlyAuroraEvents": false,
-  "relayENearEvents": false,
+  "relayENearEvents": true,
   "retrieveReceiptsMode": "batch"
 }
