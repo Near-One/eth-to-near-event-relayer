@@ -10,7 +10,7 @@
     "bn": "^1.0.5",
     "dotenv": "^8.2.0",
     "eth-connector": "https://github.com/aurora-is-near/eth-connector",
-    "eth-object": "https://github.com/near/eth-object#a84d1420fdde87a768b96c6a3b3d0ee435998f72",
+    "eth-object": "https://github.com/near/eth-object#378b8dbf44a71f7049666cea5a16ab88d45aed06",
     "eth-util-lite": "near/eth-util-lite#master",
     "ethers": "^5.4.0",
     "hot-shots": "^8.3.2",
