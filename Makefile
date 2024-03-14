@@ -4,6 +4,7 @@ START_FROM_BLOCK=10147800
 NETWORK="goerli"
 
 default:
+	yarn
 	yarn run tsc
 	yarn run eslint . --ext .ts
 run:
