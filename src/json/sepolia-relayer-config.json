@@ -13,7 +13,7 @@
   "eNearAccount": "e-near.sepolia.testnet",
   "numRequiredClientConfirmations": 10,
   "pollingIntervalMs": 30000,
-  "relayEthConnectorEvents": false,
+  "relayEthConnectorEvents": true,
   "relayERC20Events": true,
   "relayERC271Events": false,
   "relayENearEvents": true,
