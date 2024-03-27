@@ -1,0 +1,22 @@
+{
+  "nearJsonRpc": "https://archival-rpc.testnet.near.org/",
+  "nearNetwork": "testnet",
+  "relayerNearAccount": "event-relayer.sepolia.testnet",
+  "ethOnNearClientAccount": "client-eth2.sepolia.testnet",
+  "erc20LockerAddress": "0xd42c7b1d5c014c66e0dd31dca0e53758bb19ed16",
+  "erc271LockerAddress": "",
+  "rainbowTokenFactoryAccount": "factory.sepolia.testnet",
+  "nftTokenFactoryAccount": "",
+  "ethCustodianAddress": "0xb2d326c058328ceE32bBeA8DFd44eAD9655Fcd2F",
+  "auroraAccount": "aurora",
+  "eNearAddress": "0x1f89e263159F541182f875AC05d773657D24eB92",
+  "eNearAccount": "e-near.sepolia.testnet",
+  "numRequiredClientConfirmations": 10,
+  "pollingIntervalMs": 30000,
+  "relayEthConnectorEvents": true,
+  "relayERC20Events": true,
+  "relayERC271Events": false,
+  "relayENearEvents": true,
+  "relayOnlyAuroraEvents": false,
+  "retrieveReceiptsMode": "batch"
+}

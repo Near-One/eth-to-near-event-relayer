@@ -1,5 +1,6 @@
 import fs from 'fs';
 import goerli_config from './json/goerli-relayer-config.json';
+import sepolia_config from './json/sepolia-relayer-config.json';
 import mainnet_config from './json/mainnet-relayer-config.json';
 import ropsten_config from './json/ropsten-relayer.config.json';
 
@@ -39,6 +40,7 @@ function getConfigByNetwork(networkOrPath: string): IConfig {
         case "goerli": return goerli_config;
         case "mainnet": return mainnet_config;
         case "ropsten": return ropsten_config;
+        case "sepolia": return sepolia_config;
         default: {
             // Load config from file
             return JSON.parse(fs.readFileSync(networkOrPath, 'utf-8'))
