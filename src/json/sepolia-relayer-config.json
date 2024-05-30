@@ -7,7 +7,7 @@
   "erc271LockerAddress": "",
   "rainbowTokenFactoryAccount": "factory.sepolia.testnet",
   "nftTokenFactoryAccount": "",
-  "ethCustodianAddress": "0xb2d326c058328ceE32bBeA8DFd44eAD9655Fcd2F",
+  "ethCustodianAddress": "0xe0320b199863D7f6D5bBa62741aACB312110DEf7",
   "auroraAccount": "aurora",
   "eNearAddress": "0x1f89e263159F541182f875AC05d773657D24eB92",
   "eNearAccount": "e-near.sepolia.testnet",
