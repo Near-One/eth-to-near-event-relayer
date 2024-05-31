@@ -19,6 +19,7 @@
   "relayERC20Events": true,
   "relayERC271Events": false,
   "relayENearEvents": true,
+  "relayNep141Events": true,
   "relayOnlyAuroraEvents": false,
   "retrieveReceiptsMode": "batch"
 }

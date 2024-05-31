@@ -23,6 +23,7 @@ export interface IConfig {
     relayERC20Events: boolean,
     relayERC271Events: boolean,
     relayENearEvents: boolean,
+    relayNep141Events: boolean,
     relayOnlyAuroraEvents: boolean,
     retrieveReceiptsMode: string
 }
