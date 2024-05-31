@@ -1,7 +1,7 @@
 .PHONY: run restore-last-session
 
-START_FROM_BLOCK=10147800
-NETWORK="goerli"
+START_FROM_BLOCK=6013034
+NETWORK="sepolia"
 
 default:
 	yarn
