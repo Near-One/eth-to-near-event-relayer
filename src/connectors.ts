@@ -17,6 +17,8 @@ export function getConnectorAccount(connectorType: ConnectorType): string {
             return relayerConfig.eNearAccount;
         case ConnectorType.erc271Locker:
             return relayerConfig.nftTokenFactoryAccount;
+        case ConnectorType.nep141:
+            return relayerConfig.nep141LockerAccount;
         default:
             throw new Error("Connector account not found!");
     }
