@@ -55,6 +55,8 @@ class Connector {
                 return "finalise_eth_to_near_transfer";
             case ConnectorType.erc271Locker:
                 return "finalise_eth_to_near_transfer";
+            case ConnectorType.nep141:
+                return "withdraw";
             default:
                 throw new Error("Connector submit method not found!");
         }
