@@ -1,8 +1,6 @@
 import fs from 'fs';
-import goerli_config from './json/goerli-relayer-config.json';
 import sepolia_config from './json/sepolia-relayer-config.json';
 import mainnet_config from './json/mainnet-relayer-config.json';
-import ropsten_config from './json/ropsten-relayer.config.json';
 
 export interface IConfig {
     nearJsonRpc: string,
@@ -17,12 +15,15 @@ export interface IConfig {
     auroraAccount: string,
     eNearAddress: string,
     eNearAccount: string,
+    nep141FactoryAddress: string,
+    nep141LockerAccount: string,
     numRequiredClientConfirmations: number,
     pollingIntervalMs: number,
     relayEthConnectorEvents: boolean,
     relayERC20Events: boolean,
     relayERC271Events: boolean,
     relayENearEvents: boolean,
+    relayNep141Events: boolean,
     relayOnlyAuroraEvents: boolean,
     retrieveReceiptsMode: string
 }
@@ -37,9 +38,7 @@ export function initConfig(networkOrPath: string): void {
 
 function getConfigByNetwork(networkOrPath: string): IConfig {
     switch (networkOrPath) {
-        case "goerli": return goerli_config;
         case "mainnet": return mainnet_config;
-        case "ropsten": return ropsten_config;
         case "sepolia": return sepolia_config;
         default: {
             // Load config from file

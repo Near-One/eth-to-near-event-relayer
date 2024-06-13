@@ -11,12 +11,15 @@
   "auroraAccount": "aurora",
   "eNearAddress": "0x1f89e263159F541182f875AC05d773657D24eB92",
   "eNearAccount": "e-near.sepolia.testnet",
+  "nep141FactoryAddress": "0xa9108f7F83Fb661e611991116D526fCa1a9585ab",
+  "nep141LockerAccount": "ft-locker.sepolia.testnet",
   "numRequiredClientConfirmations": 10,
   "pollingIntervalMs": 30000,
   "relayEthConnectorEvents": true,
   "relayERC20Events": true,
   "relayERC271Events": false,
   "relayENearEvents": true,
+  "relayNep141Events": true,
   "relayOnlyAuroraEvents": false,
   "retrieveReceiptsMode": "batch"
 }
