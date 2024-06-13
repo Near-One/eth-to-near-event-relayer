@@ -16,8 +16,8 @@
   "eNearAddress": "0x85F17Cf997934a597031b2E18a9aB6ebD4B9f6a4",
   "eNearAccount": "e-near.near",
 
-  "nep141FactoryAddress": "",
-  "nep141LockerAccount": "",
+  "nep141FactoryAddress": "0x252e87862A3A720287E7fd527cE6e8d0738427A2",
+  "nep141LockerAccount": "ft-locker.bridge.near",
 
   "numRequiredClientConfirmations": 20,
   "pollingIntervalMs": 30000,
