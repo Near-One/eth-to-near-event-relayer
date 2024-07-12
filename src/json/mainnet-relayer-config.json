@@ -1,5 +1,5 @@
 {
-  "nearJsonRpc": "https://rpc.mainnet.near.org/",
+  "nearJsonRpc": "https://rpc.mainnet.pagoda.co/",
   "nearNetwork": "mainnet",
 
   "relayerNearAccount": "event-relayer.near",
