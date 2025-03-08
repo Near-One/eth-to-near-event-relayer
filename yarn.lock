@@ -1912,9 +1912,9 @@ eth-lib@^0.1.26:
     ws "^3.0.0"
     xhr-request-promise "^0.1.2"
 
-"eth-object@https://github.com/near/eth-object#378b8dbf44a71f7049666cea5a16ab88d45aed06":
-  version "1.0.3"
-  resolved "https://github.com/near/eth-object#378b8dbf44a71f7049666cea5a16ab88d45aed06"
+"eth-object@https://github.com/near/eth-object#c8d641a61279ea8fd709d5fd3010b7dc39991e65":
+  version "1.0.4"
+  resolved "https://github.com/near/eth-object#c8d641a61279ea8fd709d5fd3010b7dc39991e65"
   dependencies:
     eth-util-lite near/eth-util-lite#master
     ethereumjs-util "^7.0.3"
